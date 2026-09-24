@@ -4,7 +4,6 @@
 [![Multi-Agent Architecture](https://img.shields.io/badge/architecture-Multi--Agent%20Closed--Loop-blue.svg)]()
 [![Exact Verification](https://img.shields.io/badge/verification-Exact%20Byte%20%26%20Char-orange.svg)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Author](https://img.shields.io/badge/Author-Hasung%20Cho%20%28BR8KTIME%29-blueviolet)](https://github.com/BR8KTIME)
 
 > **A Multi-Agent System with Exact Character/Byte Verification & Autonomous Quality Audits for Job Application Essays.**
 
