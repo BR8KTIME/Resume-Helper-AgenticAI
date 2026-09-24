@@ -37,20 +37,24 @@ function parseInputFile(filePath) {
   const content = fs.readFileSync(filePath, 'utf-8');
 
   // Regex extractors for Markdown formatted inputs
-  const companyMatch = content.match(/(?:\*|\-)?\s*\*\*지원\s*기업\*\*:\s*(.*)/i) ||
+  const companyMatch = content.match(/(?:\*|\-)?\s*\*\*(?:지원\s*)?기업(?:\s*명)?\*\*:\s*(.*)/i) ||
+                       content.match(/(?:\*|\-)?\s*\*\*Target\s*(?:Company|Organization)\*\*:\s*(.*)/i) ||
                        content.match(/#+\s*(?:지원\s*)?기업명?:\s*(.*)/i);
   
-  const jdMatch = content.match(/(?:\*|\-)?\s*\*\*지원\s*직무(?:\s*및\s*JD\s*요구역량)?\*\*:\s*(.*)/i) ||
+  const jdMatch = content.match(/(?:\*|\-)?\s*\*\*(?:지원\s*)?직무(?:\s*및\s*JD\s*요구역량)?\*\*:\s*(.*)/i) ||
+                  content.match(/(?:\*|\-)?\s*\*\*Target\s*Role\*\*:\s*(.*)/i) ||
                   content.match(/#+\s*(?:공식\s*)?(?:직무기술서|JD|직무\s*요구사항)\s*\n([\s\S]*?)(?=\n#+|$)/i);
 
   const questionMatch = content.match(/(?:\*|\-)?\s*\*\*문항\s*(?:번호\s*\/)?\s*제목\*\*:\s*(.*)/i) ||
+                        content.match(/(?:\*|\-)?\s*\*\*Question(?:\s*Prompt)?\*\*:\s*(.*)/i) ||
                         content.match(/#+\s*(?:문항|질문|Question)\s*:\s*(.*)/i) ||
                         content.match(/(?:\*|\-)?\s*문항\s*\d+\s*:\s*(.*)/i);
 
-  const limitMatch = content.match(/최대\s*([\d,]+)\s*자/i) ||
-                     content.match(/한도\s*:\s*([\d,]+)\s*자/i);
+  const limitMatch = content.match(/최대\s*([\d,]+)\s*(?:자|bytes?)/i) ||
+                     content.match(/한도\s*:\s*([\d,]+)\s*(?:자|bytes?)/i) ||
+                     content.match(/Max\s*([\d,]+)\s*(?:chars?|characters?|bytes?)/i);
 
-  const expMatch = content.match(/#+\s*(?:지원자\s*)?(?:실제\s*)?(?:경험|소재|연구\s*자산|메모|구술)\s*\n([\s\S]*?)(?=\n#+|$)/i) ||
+  const expMatch = content.match(/#+\s*(?:[0-9]+[.)]\s*)?(?:지원자|후보자|Candidate)?\s*(?:의\s*)?(?:실제\s*|핵심\s*|날것\s*|Core\s*|Raw\s*)?(?:경험|소재|연구\s*자산|메모|구술|노트|Notes|Experience|Dilemma)[\s\S]*?\n([\s\S]*?)(?=\n#+|$)/i) ||
                    content.match(/(?:\*|\-)?\s*\*\*(?:핵심\s*)?소재\*\*:\s*(.*)/i);
 
   const data = {};
