@@ -17,50 +17,17 @@
 
 const fs = require('fs');
 const path = require('path');
-
-// 금지어 및 AI 상투적 클리셰 리스트
-const BANNED_PATTERNS = [
-  { pattern: /열정을 다해/g, label: '진부한 열정 클리셰 ("열정을 다해")' },
-  { pattern: /최선을 다해 밤을/g, label: '진부한 밤샘 클리셰 ("최선을 다해 밤을")' },
-  { pattern: /100% 일치/g, label: '과장 수식어 ("100% 일치")' },
-  { pattern: /치트키/g, label: '감정적/비공학적 비유 ("치트키")' },
-  { pattern: /사기 캐릭터/g, label: '과장된 수식어 ("사기 캐릭터")' },
-  { pattern: /적수가 없는/g, label: '과장된 수식어 ("적수가 없는")' },
-  { pattern: /완벽하게 들어맞/g, label: '과장된 수식어 ("완벽하게 들어맞")' },
-  { pattern: /피와땀/g, label: '감성적 표현 ("피와 땀")' },
-  { pattern: /뼈를 묻/g, label: '진부한 충성 클리셰 ("뼈를 묻")' },
-  { pattern: /귀사/g, label: 'AI 전형 상투어 ("귀사" ➔ 사명 직접 명시 또는 생략)' },
-  { pattern: /시너지/g, label: 'AI 전형 상투어 ("시너지" ➔ 구체적 보완/협업/정합성 대체)' },
-  { pattern: /역량을 함양/g, label: 'AI 전형 상투어 ("역량을 함양" ➔ 배웠습니다/익혔습니다 대체)' },
-  { pattern: /기여하고 싶습니다/g, label: 'AI 전형 종결 상투어 ("기여하고 싶습니다" ➔ 구체적 엔지니어링 행동/성장 종결)' },
-  { pattern: /·/g, label: 'AI 특유 가운뎃점 ("·" ➔ "및", "와/과", 쉼표 대체)' },
-  { pattern: /게이트키퍼/g, label: 'AI 번역투 어휘 ("게이트키퍼" ➔ 검증/디버깅 전담으로 대체)' },
-  { pattern: /뼈대\s*코드|뼈대/g, label: 'AI 번역투 어휘 ("뼈대" ➔ 기본 틀/프로토타입으로 대체)' },
-  { pattern: /폐루프/g, label: 'AI 과장 어휘 ("폐루프" ➔ 자동 검증 파이프라인으로 대체)' },
-  { pattern: /개발\s*신뢰도/g, label: 'AI 억지 명사 압축 ("개발 신뢰도" ➔ 신뢰할 수 있는 소프트웨어로 대체)' },
-  { pattern: /데이터\s*무결성/g, label: 'AI 억지 명사 압축 ("데이터 무결성" ➔ 정확한 결과/신뢰성으로 대체)' },
-  { pattern: /미사여구/g, label: '어색한 문학적 어휘 ("미사여구" ➔ 과장된 표현/상투어로 대체)' }
-];
+const {
+  BANNED_PATTERNS,
+  calculateBytes,
+  analyzeStructure,
+  findCliches
+} = require('./verify_essay.js');
 
 // 주의(Caution) 패턴: 완전 금지는 아니지만 문단별 반복 남발 시 주의 알림 (1문항당 최대 1회 허용)
 const CAUTION_PATTERNS = [
   { pattern: /이를\s*(?:해결하기\s*)?위해/g, maxAllowed: 1, label: '접속 클리셰 남발 주의 ("이를 위해", "이를 해결하기 위해" ➔ 1문항당 최대 1회 허용, 자연스러운 행동 연결 권장)' }
 ];
-
-function calculateBytes(str, mode = 'euckr') {
-  let bytes = 0;
-  for (let i = 0; i < str.length; i++) {
-    const charCode = str.charCodeAt(i);
-    if (charCode <= 0x007f) {
-      bytes += 1;
-    } else if (mode === 'utf8') {
-      bytes += 3;
-    } else {
-      bytes += 2;
-    }
-  }
-  return bytes;
-}
 
 function parseQuestionBlock(blockText) {
   const companyMatch = blockText.match(/\*\s*\*\*지원 기업\*\*:\s*(.*)/i);
@@ -114,42 +81,6 @@ function parseInputFile(filePath) {
   }
 
   return { isMulti: false, ...parseQuestionBlock(content) };
-}
-
-function analyzeStructure(text) {
-  const sentences = text.split(/(?<=[.?!])\s+/).filter(s => s.trim().length > 0);
-  const actionKeywords = ['분석', '설계', '구현', '도입', '판단', '검증', '수정', '해결', '측정', '최적화', '추적', '포팅', '정의', '비교', '실증', '수행', '확보', '완수', '자처', '제시', '검토', '도출', '개발', '재설계', '결합', '구축', '연동', '바탕으로'];
-  const situationKeywords = ['당시', '배경', '문제는', '과제는', '상황이었습니다', '목표였습니다', '이슈가 발생', '프로젝트에서', '참여했습니다', '발생했습니다'];
-  const resultKeywords = ['결과', '달성했습니다', '기여했습니다', '향상되었습니다', '확인했습니다', '배울 수 있었습니다', '배웠습니다'];
-
-  let actionCount = 0;
-  let situationCount = 0;
-  let resultCount = 0;
-
-  sentences.forEach(s => {
-    if (actionKeywords.some(kw => s.includes(kw))) actionCount++;
-    if (situationKeywords.some(kw => s.includes(kw))) situationCount++;
-    if (resultKeywords.some(kw => s.includes(kw))) resultCount++;
-  });
-
-  const total = sentences.length || 1;
-  return {
-    sentenceCount: sentences.length,
-    actionRatio: Math.round((actionCount / total) * 100),
-    situationRatio: Math.round((situationCount / total) * 100),
-    resultRatio: Math.round((resultCount / total) * 100)
-  };
-}
-
-function findCliches(text) {
-  const detected = [];
-  for (const item of BANNED_PATTERNS) {
-    const matches = text.match(item.pattern);
-    if (matches) {
-      detected.push({ label: item.label, count: matches.length });
-    }
-  }
-  return detected;
 }
 
 function findCautions(text) {
@@ -280,12 +211,12 @@ function run() {
   if (!fs.existsSync(inputPath)) {
     const sampleInputPath = path.resolve(__dirname, '../samples/sample_input.md');
     if (fs.existsSync(sampleInputPath)) {
-      console.log(`ℹ️ [Notice] 'draft_input.md' not found. Running demo pipeline on sample input: '${sampleInputPath}'...\n`);
+      console.log(`ℹ️ [안내] 'draft_input.md'가 없어 샘플 파일('${sampleInputPath}')로 데모 파이프라인을 실행합니다...\n`);
       inputPath = sampleInputPath;
     } else {
       const templatePath = path.resolve(__dirname, '../draft_input.template.md');
-      console.log(`ℹ️ [Notice] Input file '${inputPath}' not found.`);
-      console.log(`   Please copy '${templatePath}' to 'draft_input.md' to write your draft.`);
+      console.log(`ℹ️ [안내] 입력 파일 '${inputPath}'이 없습니다.`);
+      console.log(`   '${templatePath}'을 복사하여 아이디어를 작성하신 후 다시 실행해 주세요.`);
       process.exit(0);
     }
   }

@@ -302,4 +302,14 @@ function run() {
   }
 }
 
-run();
+if (require.main === module) {
+  run();
+}
+
+module.exports = {
+  BANNED_PATTERNS,
+  calculateBytes,
+  analyzeStructure,
+  findCliches,
+  run
+};
