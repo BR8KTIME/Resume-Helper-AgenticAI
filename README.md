@@ -157,7 +157,6 @@ npm test
 
 * **Hasung Cho**
   * Email: lifeofcho23@gmail.com
-  * GitHub: [@BR8KTIME](https://github.com/BR8KTIME)
 
 ---
 
