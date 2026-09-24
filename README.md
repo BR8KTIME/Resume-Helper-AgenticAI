@@ -18,7 +18,7 @@ Writing application essays for tech companies requires meeting **strict quantita
 
 Large Language Models (GPT, Claude, Gemini) struggle to count characters mathematically and often hallucinate counts or introduce clichés. 
 
-**Resume-Helper-AgenticAI** solves this by combining specialized AI agents with deterministic Node.js verification scripts. It provides a complete pipeline that drafts, measures, audits, and auto-corrects application essays until all constraints are 100% satisfied.
+**Resume-Helper-AgenticAI** solves this by combining specialized AI agents with deterministic Node.js verification scripts. It provides a complete pipeline that drafts, measures, audits, and auto-corrects application essays until all constraints are satisfied.And ofcourse you must definitely check if for yourself for the one last time before turning it in. 
 
 ---
 
