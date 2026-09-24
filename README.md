@@ -92,9 +92,9 @@ flowchart TD
     5. `user_experience`: Raw engineering facts and actions taken
   - Returns `Exit Code 1` on missing inputs, prompting the user for complete data and preventing AI fabrication from thin air.
 * **Gate 2: Exact Quantitative Verifier (`tools/verify_essay.js`)**:
-  - **Multi-Byte Precision**: Calculates exact character counts, EUC-KR (2 bytes), and UTF-8 (3 bytes).
-  - **Sentence Variance & Monotony Audit**: Rejects uniform AI cadence (e.g. all sentences ~45 chars); enforces balanced short punchy sentences (20~35 chars) and compound action sentences (70~90+ chars).
-  - **Anti-Cliché Filter**: Scans for and flags artificial AI idioms (`귀사`, `시너지`, `역량을 함양`, `100% 일치`, middle-dot `·`).
+  - **Multi-Byte Precision**: Calculates exact character counts.
+  - **Sentence Variance & Monotony Audit**: Rejects uniform AI cadence. 
+  - **Anti-Cliché Filter**: Scans for and flags artificial AI idioms.
 
 ### 2. 👥 3 Specialized Subagent Personas (`agents/` & `AGENTS.md`)
 * **`job_analyst` (`agents/job_analyst.md`)**: Parses official job posting PDFs/text, extracts core technical requirements, and conducts market/company research.
