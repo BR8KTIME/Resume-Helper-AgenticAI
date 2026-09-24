@@ -80,7 +80,7 @@ sequenceDiagram
 * **Fact Checker (`fact_checker.md`)**: Acts as an independent auditor to ensure the essay reflects authentic problem-solving and honest facts.
 
 ### 3. Automated Test Suite (`tests/`)
-* Includes `tests/test_cases.json` covering realistic enterprise scenarios (Cloud/Distributed Systems, Autonomous Driving, Embedded Telecom).
+* Includes `tests/test_cases.json` covering diverse business & tech scenarios (Performance Marketing, CRM & Retention, Inbound Growth Strategy).
 * Run regression tests with a single command to ensure the tools work reliably.
 
 ---
@@ -104,7 +104,7 @@ Resume-Helper-AgenticAI/
 │   ├── test_cases.json     # Standard evaluation cases
 │   └── run_tests.js        # Test runner
 └── samples/                # Sample demonstration data
-    ├── sample_profile.md   # Mock candidate profile
+    ├── sample_profile.md   # Mock candidate profile (Marketing Specialist)
     └── sample_output.md    # Verified sample essay
 ```
 
@@ -136,9 +136,8 @@ node tools/verify_essay.js --file ./samples/sample_output.md --json
 ## 👤 Author
 
 * **Hasung Cho**
-  * GitHub: [@BR8KTIME](https://github.com/BR8KTIME)
   * Email: lifeofcho23@gmail.com
-  * Academic Background: M.S. in Computer Science & Engineering, POSTECH
+  * GitHub: [@BR8KTIME](https://github.com/BR8KTIME)
 
 ---
 
