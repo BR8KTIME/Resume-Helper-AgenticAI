@@ -22,46 +22,50 @@ Large Language Models (GPT, Claude, Gemini) struggle to count characters mathema
 
 ---
 
-## 🏗️ How It Works (Multi-Agent Pipeline)
+## 🏗️ System Architecture & Multi-Agent Pipeline
 
-The system separates drafting from verification to guarantee high quality and factual accuracy:
+The system decouples drafting from deterministic verification to eliminate AI hallucinations and ensure quantitative compliance:
 
 ```mermaid
-sequenceDiagram
-    autonumber
-    actor User as User / Candidate
-    participant Orchestrator as Main Orchestrator
-    participant JobAnalyst as Job Analyst (JD Spec)
-    participant ResumeEditor as Resume Editor (STAR Draft)
-    participant VerifyTool as Verification Tool (verify_essay.js)
-    participant FactChecker as Fact Checker (Independent Audit)
-
-    User->>Orchestrator: Input Target Role & Candidate Experiences
-    Orchestrator->>JobAnalyst: Deconstruct JD & Extract Requirements
-    JobAnalyst-->>Orchestrator: Structured Requirements & Character Limits
-    Orchestrator->>ResumeEditor: Request STAR Draft (30% Situation, 60% Action)
-    ResumeEditor-->>Orchestrator: Initial Draft
-
-    rect rgb(240, 245, 255)
-    Note over Orchestrator,FactChecker: Autonomous Quality & Constraint Loop
-    Orchestrator->>VerifyTool: Run Exact Char/Byte & Cliché Analysis
-    alt Verification FAILS (Limit Exceeded or Cliché Found)
-        VerifyTool-->>Orchestrator: Exact Violation Metrics
-        Orchestrator->>ResumeEditor: Auto-Revise Draft with Feedback
-        ResumeEditor-->>Orchestrator: Revised Draft
-    else Verification PASSES
-        VerifyTool-->>Orchestrator: PASS Metrics (Chars, EUC-KR, UTF-8)
-        Orchestrator->>FactChecker: Independent 6-Point Audit (Truth & Voice)
-        alt Fact Checker REJECTS
-            FactChecker-->>Orchestrator: REJECT (Logical break / Vague buzzword)
-            Orchestrator->>ResumeEditor: Re-draft with Audit Findings
-        else Fact Checker APPROVES
-            FactChecker-->>Orchestrator: APPROVED Certification
-        end
-    end
+flowchart TD
+    subgraph Inputs["1. System Inputs"]
+        JD["Job Description (JD Specifications)"]
+        Profile["Candidate Profile (Experiences & Assets)"]
+        Constraints["Target Constraints (Char / Byte Limits)"]
     end
 
-    Orchestrator-->>User: Final Verified Essay + Full Audit Report
+    subgraph Agents["2. Multi-Agent Reasoning Core"]
+        JobAnalyst["Job Analyst Agent<br/>(Extracts Requirements & Scoring Criteria)"]
+        ResumeEditor["Resume Editor Agent<br/>(STAR-based Action Drafting & Context Bridging)"]
+        FactChecker["Fact Checker Agent<br/>(Independent 6-Point Audit Gatekeeper)"]
+    end
+
+    subgraph VerificationEngine["3. Deterministic Verification Engine (Node.js)"]
+        ExactMetrics["Exact Counter Engine<br/>(EUC-KR 2B / UTF-8 3B / Spaces)"]
+        AntiCliche["Anti-Cliché & Slang Filter<br/>(Detects AI Buzzwords & Middle Dots)"]
+        StructureCheck["Structure Ratio Analyzer<br/>(Situation <30% / Action >60%)"]
+    end
+
+    subgraph ClosedLoop["4. Autonomous Closed-Loop Refinement"]
+        Orchestrator["Pipeline Orchestrator"]
+    end
+
+    Inputs --> Orchestrator
+    Orchestrator --> JobAnalyst
+    JobAnalyst --> ResumeEditor
+    ResumeEditor --> Orchestrator
+    Orchestrator --> VerificationEngine
+    
+    VerificationEngine -- "FAIL (Limits / Clichés Detected)" --> ResumeEditor
+    VerificationEngine -- "PASS" --> FactChecker
+    FactChecker -- "REJECT (Vague buzzwords / Flow breaks)" --> ResumeEditor
+    FactChecker -- "APPROVED" --> FinalOutput["Final Verified Essay & Audit Proof"]
+
+    style Inputs fill:#f8f9fa,stroke:#adb5bd,stroke-width:1px
+    style Agents fill:#e7f5ff,stroke:#339af0,stroke-width:2px
+    style VerificationEngine fill:#fff3bf,stroke:#f59f00,stroke-width:2px
+    style ClosedLoop fill:#f1f3f5,stroke:#495057,stroke-dasharray: 5 5
+    style FinalOutput fill:#d3f9d8,stroke:#2b8a3e,stroke-width:2px
 ```
 
 ---
