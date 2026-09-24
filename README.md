@@ -118,18 +118,26 @@ Resume-Helper-AgenticAI/
 ## ⚡ Getting Started
 
 ### 1. Run the Autonomous Pipeline Orchestrator (`orchestrator.js`)
-Execute the end-to-end multi-agent verification pipeline. Running without arguments automatically launches an interactive demo using `samples/sample_input.md`:
+Execute the end-to-end multi-agent verification pipeline. Supports two modes:
+
+#### Mode A: Full Autonomous Agentic Closed-Loop (with LLM API)
+With a Google Gemini API key, the orchestrator autonomously generates drafts, runs deterministic verification, and re-drafts upon failure until passing the 6-point audit:
 ```bash
-# Run the demo pipeline (generates draft_output.md):
+# 1. Configure your API key (copy .env.example to .env)
+cp .env.example .env
+# Add GEMINI_API_KEY=your_key_here to .env (Get free key at: https://aistudio.google.com/)
+
+# 2. Run the autonomous closed-loop
 node tools/orchestrator.js
 
-# Or process a custom input file:
+# Or provide your key directly via CLI:
+node tools/orchestrator.js --key "your_gemini_api_key"
+```
+
+#### Mode B: Offline Deterministic Verifier Mode
+Without an API key, the pipeline deterministically validates existing drafts against exact byte/character limits and banned clichés without network calls:
+```bash
 node tools/orchestrator.js --input ./samples/sample_input.md --output ./draft_output.md
-
-# To draft your own essay, copy the starter template:
-cp draft_input.template.md draft_input.md
-# (Fill in your target enterprise, prompt, and draft text in draft_input.md)
-node tools/orchestrator.js
 ```
 
 ### 2. Standalone Quantitative Verification Tool (`verify_essay.js`)

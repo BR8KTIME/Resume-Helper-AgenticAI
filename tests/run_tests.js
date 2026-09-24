@@ -40,7 +40,7 @@ testCases.forEach((tc, idx) => {
     const result = JSON.parse(stdout);
 
     if (result.status === tc.expected_status) {
-      console.log(`👉 Result: ✅ PASS (Chars: ${result.metrics.charWithSpaces}, EUC-KR: ${result.metrics.bytesEucKr}B, Action: ${result.structure.actionRatio}%)`);
+      console.log(`👉 Result: ✅ PASS (Chars: ${result.metrics.charWithSpaces}, EUC-KR: ${result.metrics.bytesEucKr}B, Clichés: ${result.cliches.length})`);
       passedCount++;
     } else {
       console.log(`👉 Result: ❌ FAIL (Expected: ${tc.expected_status}, Got: ${result.status})`);

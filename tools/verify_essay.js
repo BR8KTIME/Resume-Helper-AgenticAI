@@ -138,33 +138,6 @@ function calculateBytes(str, mode = 'euckr') {
   return bytes;
 }
 
-function analyzeStructure(text) {
-  // 상황(Situation) vs 행동/과정(Action/Process) vs 결과(Result) 휴리스틱 감지
-  const sentences = text.split(/(?<=[.?!])\s+/).filter(s => s.trim().length > 0);
-  
-  const actionKeywords = ['분석했습니다', '설계했습니다', '구현했습니다', '도입했습니다', '판단했습니다', '검증했습니다', '수정했습니다', '해결했습니다', '측정했습니다', '최적화했습니다', '추적했습니다', '고민했습니다', '바탕으로', '접근했습니다'];
-  const situationKeywords = ['당시', '배경', '문제는', '과제는', '상황이었습니다', '목표였습니다', '이슈가 발생', '프로젝트에서'];
-  const resultKeywords = ['결과', '달성했습니다', '기여했습니다', '향상되었습니다', '확인했습니다', '배울 수 있었습니다'];
-
-  let actionCount = 0;
-  let situationCount = 0;
-  let resultCount = 0;
-
-  sentences.forEach(s => {
-    if (actionKeywords.some(kw => s.includes(kw))) actionCount++;
-    if (situationKeywords.some(kw => s.includes(kw))) situationCount++;
-    if (resultKeywords.some(kw => s.includes(kw))) resultCount++;
-  });
-
-  const total = sentences.length || 1;
-  return {
-    sentenceCount: sentences.length,
-    actionRatio: Math.round((actionCount / total) * 100),
-    situationRatio: Math.round((situationCount / total) * 100),
-    resultRatio: Math.round((resultCount / total) * 100)
-  };
-}
-
 function findCliches(text) {
   const detected = [];
   for (const item of BANNED_PATTERNS) {
@@ -205,9 +178,8 @@ function run() {
   const bytesEucKr = calculateBytes(targetText, 'euckr');
   const bytesUtf8 = calculateBytes(targetText, 'utf8');
 
-  // 클리셰 및 구조 분석
+  // 클리셰 분석
   const detectedCliches = findCliches(targetText);
-  const structure = analyzeStructure(targetText);
 
   // 규격 검증
   let pass = true;
@@ -261,7 +233,6 @@ function run() {
       min: options.min,
       type: options.type
     },
-    structure,
     cliches: detectedCliches,
     violations
   };
@@ -280,8 +251,6 @@ function run() {
   console.log(`• 공백 제외 글자수: ${charWithoutSpaces.toLocaleString()} 자`);
   console.log(`• 바이트수 (EUC-KR 2byte): ${bytesEucKr.toLocaleString()} Bytes`);
   console.log(`• 바이트수 (UTF-8 3byte) : ${bytesUtf8.toLocaleString()} Bytes`);
-  console.log('----------------------------------------------------');
-  console.log(`• 구조 추정 비율: 행동/과정 ${structure.actionRatio}% | 상황 ${structure.situationRatio}% | 결과 ${structure.resultRatio}%`);
   
   if (detectedCliches.length > 0) {
     console.log('🚨 금지 표현 감지:');
@@ -309,7 +278,6 @@ if (require.main === module) {
 module.exports = {
   BANNED_PATTERNS,
   calculateBytes,
-  analyzeStructure,
   findCliches,
   run
 };
