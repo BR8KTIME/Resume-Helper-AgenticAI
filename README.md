@@ -29,51 +29,53 @@ The system decouples drafting from deterministic verification to eliminate AI ha
 
 ```mermaid
 flowchart TD
-    subgraph User["User Request in Antigravity Chat"]
-        Req["'Write / refine my essay for Company X'"]
+    subgraph SG_User["User Request"]
+        Req["Write / Refine Application Essay"]
     end
 
-    subgraph Gate1["Gate 1: Input Contract Verification (Deterministic Code)"]
-        VIntake["tools/validate_intake.js<br/>(Verifies 5 Mandatory Inputs)"]
-    end
-
-    subgraph MainAgent["Antigravity Main Agent (Orchestrator)"]
+    subgraph SG_Orch["Antigravity Main Agent (Orchestrator)"]
         Orch["Orchestrator<br/>(Coordinates Subagents & Gate Tools)"]
     end
 
-    subgraph DraftingAgent["Subagent: Drafting & Optimization"]
+    subgraph SG_Gate1["Gate 1: Deterministic Code"]
+        VIntake["tools/validate_intake.js<br/>(Verifies 5 Mandatory Inputs)"]
+        UserPrompt["Block & Request Missing Info"]
+    end
+
+    subgraph SG_Editor["Subagent: Drafting & Optimization"]
         Editor["resume_editor<br/>(STAR Plot, Action 60%, Bottom-Line First)"]
     end
 
-    subgraph Gate2["Gate 2: Quantitative Measurement (Deterministic Code)"]
-        VEssay["tools/verify_essay.js<br/>(Exact Chars, EUC-KR Bytes, Clichés, Sentence Variance)"]
+    subgraph SG_Gate2["Gate 2: Deterministic Code"]
+        VEssay["tools/verify_essay.js<br/>(Exact Chars, EUC-KR Bytes, Clichés, Variance)"]
     end
 
-    subgraph AuditAgent["Subagent: Qualitative Audit"]
+    subgraph SG_Checker["Subagent: Qualitative Audit"]
         Checker["fact_checker<br/>(Independent 6-Point Fact & Integrity Audit)"]
     end
 
-    subgraph Result["Final Output"]
+    subgraph SG_Result["Final Output"]
         Done["Verified Zero-Defect Essay"]
     end
 
     Req --> Orch
     Orch --> VIntake
-    VIntake -- "FAIL (Missing Input)" --> UserPrompt["Block & Request Missing Information"] --> User
-    VIntake -- "PASS" --> Editor
+    VIntake -->|"FAIL: Missing Input"| UserPrompt
+    UserPrompt -.-> Req
+    VIntake -->|"PASS"| Editor
     Editor --> VEssay
-    VEssay -- "FAIL (Limits / Clichés / Monotony)" --> |Feed Delta Feedback| Editor
-    VEssay -- "PASS" --> Checker
-    Checker -- "REJECT (Vague buzzwords / Flow breaks)" --> |Feed Critique Feedback| Editor
-    Checker -- "APPROVED" --> Done
+    VEssay -->|"FAIL: Delta Feedback"| Editor
+    VEssay -->|"PASS"| Checker
+    Checker -->|"REJECT: Critique Feedback"| Editor
+    Checker -->|"APPROVED"| Done
 
-    style User fill:#f8f9fa,stroke:#adb5bd,stroke-width:1px
-    style Gate1 fill:#ffe3e3,stroke:#e03131,stroke-width:2px
-    style MainAgent fill:#e7f5ff,stroke:#1971c2,stroke-width:2px
-    style DraftingAgent fill:#d0ebff,stroke:#339af0,stroke-width:2px
-    style Gate2 fill:#fff3bf,stroke:#f59f00,stroke-width:2px
-    style AuditAgent fill:#e6fcf5,stroke:#20c997,stroke-width:2px
-    style Result fill:#d3f9d8,stroke:#2b8a3e,stroke-width:2px
+    style SG_User fill:#f8f9fa,stroke:#adb5bd,stroke-width:1px
+    style SG_Gate1 fill:#ffe3e3,stroke:#e03131,stroke-width:2px
+    style SG_Orch fill:#e7f5ff,stroke:#1971c2,stroke-width:2px
+    style SG_Editor fill:#d0ebff,stroke:#339af0,stroke-width:2px
+    style SG_Gate2 fill:#fff3bf,stroke:#f59f00,stroke-width:2px
+    style SG_Checker fill:#e6fcf5,stroke:#20c997,stroke-width:2px
+    style SG_Result fill:#d3f9d8,stroke:#2b8a3e,stroke-width:2px
 ```
 
 ---
