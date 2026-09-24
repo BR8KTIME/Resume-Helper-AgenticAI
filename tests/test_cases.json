@@ -1,0 +1,53 @@
+[
+  {
+    "id": "enterprise_tech_q1",
+    "domain": "Cloud & Distributed Systems",
+    "question": "Describe your core technical strength and how you solved a challenging technical dilemma.",
+    "constraint": {
+      "type": "characters_with_spaces",
+      "max": 1000,
+      "min": 600
+    },
+    "key_requirements": [
+      "Explicit trade-off analysis",
+      "Action-oriented problem solving",
+      "Zero AI clichés (no 'synergy', no 'passionately', no middle dots)"
+    ],
+    "sample_input": "비동기 분산 네트워크 환경에서 노드 간 지연 변동 시 발생하는 글로벌 트리 재생성 오버헤드를 극복하기 위해, 현재 트리 내 국소 갱신(Local Update) 기반 알고리즘을 설계하고 실증한 경험이 있습니다.\n\n네트워크 환경에서 노드 이탈이나 RTT 급변이 일어날 때마다 전체 트리를 다시 계산하면 제어 패킷이 폭증하고 서비스가 일시 중단되는 딜레마가 발생했습니다. 저는 문제를 해결하기 위해 매번 전체 구조를 바꾸기보다, RTT 지연과 지연 변화량, 그리고 하위 서브트리 가중치를 고려하여 자식과 손자 노드 간의 국소적 경로 스위칭을 수행하는 Q-learning 알고리즘을 설계했습니다.\n\n먼저 파이썬 환경에서 단위 로직을 검증한 뒤, 실제 네트워크 토폴로지를 정밀하게 모사하는 Mininet 가상 에뮬레이션 환경으로 알고리즘을 직접 포팅하여 런타임 연동을 완료했습니다. 이 과정에서 기준 경로 검증을 위해 도입한 Gurobi 수리 최적화 솔버가 대규모 탐색 시 메모리 병목을 일으키는 문제를 확인했습니다. 이를 해결하고자 단계별 선형화와 1ms 조기 종료 콜백을 적용하여 연산 시간을 단축하고, 수리 최적화 대비 전파 시간 오차를 6% 이내로 안정화했습니다.\n\n이러한 공학적 시도를 통해 국가 공인 시험(TTA) 평가 프로세스를 통과하며 성능을 공인받았습니다. 문제를 마주했을 때 전체 시스템을 흔들지 않고 핵심 병목을 분리하여 국소적으로 해결하는 설계 역량을 길렀습니다.",
+    "expected_status": "PASS"
+  },
+  {
+    "id": "automotive_sdv_q2",
+    "domain": "Autonomous Driving & SDV Platform",
+    "question": "Explain a collaborative project where you resolved conflicting approaches or verified system reliability.",
+    "constraint": {
+      "type": "characters_with_spaces",
+      "max": 1000,
+      "min": 600
+    },
+    "key_requirements": [
+      "C++ and real-time processing context",
+      "Code-level debugging and role redistribution",
+      "Bottom-line first (두괄식)"
+    ],
+    "sample_input": "팀 프로젝트에서 파이프라인 연동 중 발생한 수식 불일치 결함을 적발하고, 각자의 강점에 맞춘 역할 재설계를 통해 정해진 기한 내에 결과 정합성을 확보했습니다.\n\n수업 과제로 대용량 포인트 클라우드의 렌더링 품질을 개선하는 2인 프로젝트를 진행했습니다. 프로포절을 작성하며 동기는 생성형 AI를 활용해 빠르게 초안을 구성했으나, 기술 용어가 파편화되어 있고 기한 내 구현이 어려운 기법들이 포함되어 있었습니다. 이에 기술 용어를 통일하고 구현 가능한 범위로 프로포절을 구체화했습니다.\n\n이후 복셀 밀도에 따른 포인트 크기 조절과 중첩 블렌딩 알고리즘을 나누어 구현했습니다. 동기는 구현을 마치고 정상 출력을 보고했으나, 화면만으로는 내부 연산의 타당성을 신뢰하기 어렵다고 판단하여 알고리즘 수식과 소스코드를 직접 대조했습니다. 그 결과 블렌딩 수식이 코드에 반영되지 않은 결함을 확인했고 수정을 요청했습니다.\n\n반복적인 검증과 수정 요청은 제 구현 일정에 병목을 유발했습니다. 따라서 동기의 빠른 구현 역량을 장점으로 삼아 작업 방식을 재설계했습니다. 동기에게 비교 알고리즘 구현과 실험 자동화 스크립트를 전담시키고, 저는 알고리즘 일치성 검증과 공정 조건 교차 검증에 집중했습니다. 또한 재작업을 방지하고자 사전 요구사항 명세서를 작성해 전달했습니다. 갈등이나 결함에 직면했을 때 상대를 탓하지 않고 강점 기반의 역할 분담을 통해 시스템을 안정적으로 완성할 수 있었습니다.",
+    "expected_status": "PASS"
+  },
+  {
+    "id": "aerospace_defense_q3",
+    "domain": "Embedded Telecommunications",
+    "question": "Demonstrate your experience in verifying system requirements under resource-constrained environments.",
+    "constraint": {
+      "type": "characters_with_spaces",
+      "max": 700,
+      "min": 400
+    },
+    "key_requirements": [
+      "Hardware and OS constraints (PetaLinux/Embedded)",
+      "Standard milestone documentation (CDR)",
+      "Zero flattery"
+    ],
+    "sample_input": "임베디드 타겟 보드 상에서 통신 알고리즘의 동작성을 실증하기 위해 상세설계검토(CDR) 문서를 작성하고 런타임 구동 검증을 완수했습니다.\n\n방산 임베디드 통신 시스템은 제한된 메모리와 연산 자원 내에서 엄격한 데드라인을 충족해야 합니다. 저는 시스템 요구사항을 체계적으로 분석하여 제안된 통신 알고리즘이 임베디드 환경에서 지연이나 버퍼 오버플로우 없이 구동될 수 있는지 기술적 타당성을 검토하고 CDR 문서를 승인받았습니다.\n\n이후 알고리즘 코드를 타겟 보드의 PetaLinux OS 상에서 온전히 컴파일하기 위해 크로스 컴파일 빌드 환경을 구축했습니다. 단순히 빌드 성공에 그치지 않고, 타겟 임베디드 런타임 환경에서 직접 패킷 송수신을 구동하며 설계 의도대로 오류 없이 동작하는지 테스트했습니다. 이 과정을 통해 임베디드 OS와 통신 프로토콜의 전 주기 엔지니어링 절차를 체득했습니다.",
+    "expected_status": "PASS"
+  }
+]

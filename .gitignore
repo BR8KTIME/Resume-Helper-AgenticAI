@@ -1,0 +1,22 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment & Credentials
+.env
+.env.local
+*.pem
+*.key
+
+# Private / Personal Candidate Data
+my_profile.md
+my_cover_letters.md
+companies/
+*.private.*
+
+# Logs & System
+*.log
+.DS_Store
+Thumbs.db

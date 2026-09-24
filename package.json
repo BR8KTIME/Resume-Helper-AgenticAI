@@ -1,0 +1,19 @@
+{
+  "name": "resume-helper-agentic-ai",
+  "version": "1.0.0",
+  "description": "Multi-agent AI pipeline for writing and mathematically verifying job application essays",
+  "main": "tools/orchestrator.js",
+  "scripts": {
+    "test": "node tests/run_tests.js",
+    "verify": "node tools/verify_essay.js"
+  },
+  "keywords": [
+    "resume-helper",
+    "agentic-ai",
+    "multi-agent",
+    "llm-guardrail",
+    "essay-verification"
+  ],
+  "author": "Hasung Cho <lifeofcho23@gmail.com> (https://github.com/BR8KTIME)",
+  "license": "MIT"
+}
