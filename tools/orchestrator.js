@@ -62,11 +62,14 @@ function loadAgentInstruction(fileName, fallback = '') {
 
 function parseQuestionBlock(blockText) {
   const companyMatch = blockText.match(/\*\s*\*\*지원 기업\*\*:\s*(.*)/i);
+  const jdMatch = blockText.match(/\*\s*\*\*지원\s*직무(?:\s*및\s*JD\s*요구역량)?\*\*:\s*(.*)/i) ||
+                  blockText.match(/###\s*(?:공식\s*)?(?:직무기술서|JD|직무\s*요구사항)\s*\n([\s\S]*?)(?=\n###|\n```|$)/i);
   const questionMatch = blockText.match(/\*\s*\*\*문항 번호 \/ 제목\*\*:\s*(.*)/i);
   const limitMatch = blockText.match(/최대\s*([\d,]+)자/i);
   const minLimitMatch = blockText.match(/최소\s*([\d,]+)자/i);
 
   const company = companyMatch ? companyMatch[1].trim() : '미지정 기업';
+  const jobDescription = jdMatch ? jdMatch[1].trim() : '';
   const question = questionMatch ? questionMatch[1].trim() : '미지정 문항';
   const maxLimit = limitMatch ? parseInt(limitMatch[1].replace(/,/g, ''), 10) : 1000;
   const minLimit = minLimitMatch ? parseInt(minLimitMatch[1].replace(/,/g, ''), 10) : Math.floor(maxLimit * 0.8);
@@ -93,6 +96,7 @@ function parseQuestionBlock(blockText) {
 
   return {
     company,
+    jobDescription,
     question,
     maxLimit,
     minLimit,
@@ -253,16 +257,18 @@ async function runAutonomousLoop(questionData, apiKey, model) {
     if (attempt === 1 && !currentDraft) {
       prompt = `
 [지원 기업]: ${questionData.company}
+[지원 직무 및 공식 JD 요구역량]: ${questionData.jobDescription || '상세 JD 미지정'}
 [문항 제목]: ${questionData.question}
 [글자 수 규격]: 공백 포함 최소 ${questionData.minLimit}자 ~ 최대 ${questionData.maxLimit}자 (목표: 약 ${Math.floor((questionData.minLimit + questionData.maxLimit) / 2)}자)
 [지원자 메모 및 핵심 소재]:
 ${questionData.userIdea}
 
-위 소재를 바탕으로 지침에 맞춰 완벽한 자기소개서 본문을 작성하십시오. 마크다운 코드블록이나 불필요한 해설 없이 순수 본문 텍스트만 출력하십시오.
+위 공식 JD 요구역량과 지원자 소재를 바탕으로, 지침에 맞춰 완벽한 자기소개서 본문을 작성하십시오. 마크다운 코드블록이나 불필요한 해설 없이 순수 본문 텍스트만 출력하십시오.
 `;
     } else {
       prompt = `
 [지원 기업]: ${questionData.company}
+[지원 직무 및 공식 JD 요구역량]: ${questionData.jobDescription || '상세 JD 미지정'}
 [문항 제목]: ${questionData.question}
 [글자 수 규격]: 공백 포함 최소 ${questionData.minLimit}자 ~ 최대 ${questionData.maxLimit}자
 
@@ -305,11 +311,12 @@ ${previousFeedback}
       const auditPrompt = `
 [문항]: ${questionData.question}
 [지원 기업]: ${questionData.company}
+[지원 직무 및 공식 JD 요구역량]: ${questionData.jobDescription || '상세 JD 미지정'}
 [글자 수 규격]: ${questionData.minLimit}~${questionData.maxLimit}자
 [검토할 자소서 본문]:
 ${currentDraft}
 
-위 본문을 6대 고정 기준([지원자 원문 흐름 보존], [AI식 과도한 압축 및 문체 차단], [어렵고 추상적인 단어 배제], [논리 인과관계 및 개연성], [솔직한 공학적 어조], [사고의 과정 70% 이상])에 따라 엄격히 심사하고 JSON 포맷으로만 응답하십시오:
+위 본문을 [공식 JD 직무 정합성] 및 6대 고정 기준([JD 직무 정합성 및 지원자 원문 보존], [AI식 과도한 압축 및 문체 차단], [어렵고 추상적인 단어 배제], [논리 인과관계 및 개연성], [솔직한 공학적 어조], [사고의 과정 70% 이상])에 따라 엄격히 심사하고 JSON 포맷으로만 응답하십시오:
 {
   "allPass": true 또는 false,
   "summary": "총평 요약",
