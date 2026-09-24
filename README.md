@@ -72,15 +72,18 @@ flowchart TD
 
 ## 🚀 Key Features
 
-### 1. Exact Verification Tool (`tools/verify_essay.js`)
-* **Multi-Byte Encoding Precision**: Calculates exact character counts, EUC-KR (2 bytes), and UTF-8 (3 bytes) with zero error.
-* **Anti-Cliché Filter**: Scans for and flags artificial AI idioms and phrases (`귀사`, `시너지`, `역량을 함양`, `100% 일치`, middle-dot `·`).
-* **Structure Ratio Analysis**: Heuristically checks the balance between **Situation (<30%)**, **Engineering Action (>60%)**, and **Results (<10%)**.
+### 1. Deterministic Verification Gates (`tools/`)
+* **Gate 1: Input Contract Gatekeeper (`tools/validate_intake.js`)**: Blocks execution immediately if any of the 5 mandatory inputs (Company, Official JD, Question Prompt, Char Limit, Raw Experience) are missing. Eliminates hallucination at the source.
+* **Gate 2: Exact Quantitative Verifier (`tools/verify_essay.js`)**:
+  - **Multi-Byte Encoding Precision**: Calculates exact character counts, EUC-KR (2 bytes), and UTF-8 (3 bytes) with zero error.
+  - **Sentence Variance & Monotony Audit**: Breaks down sentence-by-sentence character lengths. Fails uniform AI monotony (uniform 40~55 chars); requires balanced punchy short sentences (20~35 chars) and compound action sentences (70~90+ chars).
+  - **Anti-Cliché Filter**: Scans for and flags artificial AI idioms and phrases (`귀사`, `시너지`, `역량을 함양`, `100% 일치`, middle-dot `·`).
 
-### 2. Specialized Multi-Agent Roles (`agents/`)
+### 2. Specialized Multi-Agent Roles (`agents/` & `AGENTS.md`)
 * **Job Analyst (`job_analyst.md`)**: Parses job descriptions and extracts core technical requirements.
-* **Resume Editor (`resume_editor.md`)**: Drafts experience-focused essays using the STAR framework with a bottom-line-first approach (두괄식).
-* **Fact Checker (`fact_checker.md`)**: Acts as an independent auditor to ensure the essay reflects authentic problem-solving and honest facts.
+* **Resume Editor (`resume_editor.md`)**: Drafts experience-focused essays using the STAR framework with a bottom-line-first approach (두괄식) and candidate-authentic engineering diction.
+* **Fact Checker (`fact_checker.md`)**: Acts as an independent auditor to ensure the essay reflects authentic problem-solving, honest facts, and zero fabricated CS tropes.
+* **Closed-Loop Specification (`AGENTS.md`)**: Standard multi-agent orchestration specification for the 8-step closed-loop evaluator-optimizer architecture.
 
 ### 3. Automated Test Suite (`tests/`)
 * Includes `tests/test_cases.json` covering diverse business & tech scenarios (Performance Marketing, CRM & Retention, Inbound Growth Strategy).
@@ -93,17 +96,19 @@ flowchart TD
 ```text
 Resume-Helper-AgenticAI/
 ├── README.md                  # Documentation & workflow overview
+├── AGENTS.md                  # Standard Multi-Agent Closed-Loop Specification
 ├── package.json               # Scripts & project metadata
 ├── LICENSE                    # MIT License
 ├── .gitignore                 # Privacy safeguards
 ├── draft_input.template.md    # Starter template for drafting essays
 ├── agents/                    # Specialized agent specifications
 │   ├── job_analyst.md         # JD deconstruction
-│   ├── resume_editor.md       # STAR draft generator
+│   ├── resume_editor.md       # STAR draft generator & optimizer
 │   └── fact_checker.md        # Independent audit gatekeeper
 ├── tools/                     # Deterministic verification tools
-│   ├── verify_essay.js        # Character, byte, and cliché validator
-│   └── orchestrator.js        # Full pipeline runner (360+ lines)
+│   ├── validate_intake.js     # Gate 1: Mandatory input contract gatekeeper
+│   ├── verify_essay.js        # Gate 2: Character, byte, variance & cliché validator
+│   └── orchestrator.js        # Full pipeline runner (with condition-preserving feedback)
 ├── tests/                     # Automated test suite
 │   ├── test_cases.json        # Standard evaluation cases
 │   └── run_tests.js           # Test runner

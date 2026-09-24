@@ -218,6 +218,25 @@ function run() {
     detectedCliches.forEach(c => violations.push(`금지어/클리셰 검출: ${c.label} (${c.count}회)`));
   }
 
+  // 문장별 길이 및 균일성(Variance) 정밀 분석
+  const rawSentences = targetText
+    .split(/(?<=[.!?])\s+|\n+/)
+    .map(s => s.trim())
+    .filter(s => s.length > 0);
+
+  const sentenceLengths = rawSentences.map(s => s.length);
+  const minLen = sentenceLengths.length > 0 ? Math.min(...sentenceLengths) : 0;
+  const maxLen = sentenceLengths.length > 0 ? Math.max(...sentenceLengths) : 0;
+  const avgLen = sentenceLengths.length > 0 ? Math.round(sentenceLengths.reduce((a, b) => a + b, 0) / sentenceLengths.length) : 0;
+
+  // 문장 길이가 40~60자 사이에 90% 이상 갇혀있고 min/max 차이가 20자 미만이면 AI 단조로움 경고
+  let isMonotonous = false;
+  if (sentenceLengths.length >= 4 && (maxLen - minLen) <= 20 && avgLen >= 40 && avgLen <= 60) {
+    isMonotonous = true;
+    pass = false;
+    violations.push(`🚨 AI식 기계적 문장 단조로움 적발: 모든 문장이 ${minLen}~${maxLen}자(평균 ${avgLen}자)로 지나치게 일관된 길이입니다. 단문(20~35자)과 복문(70~90자)의 호흡 완급을 조절하세요.`);
+  }
+
   const result = {
     status: pass ? 'PASS' : 'FAIL',
     file: options.file || 'DIRECT_TEXT',
@@ -258,6 +277,10 @@ function run() {
   } else {
     console.log('• 금지어/클리셰: 이상 없음 (Clean)');
   }
+
+  // 문장별 리듬감(호흡) 통계 출력
+  console.log(`• 문장 호흡/리듬감: 총 ${rawSentences.length}개 문장 (최단 ${minLen}자 ~ 최장 ${maxLen}자 / 평균 ${avgLen}자) ${isMonotonous ? '❌ AI 단조로움' : '✅ 양호'}`);
+  console.log(`  - 문장별 길이: [${sentenceLengths.map(l => l + '자').join(', ')}]`);
 
   if (violations.length > 0) {
     console.log('----------------------------------------------------');

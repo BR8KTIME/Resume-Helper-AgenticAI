@@ -298,7 +298,7 @@ ${previousFeedback}
       const violationMsg = metrics.violations.join('\n');
       console.log(`⚠️ [Loop Action] Deterministic verification failed. Feeding delta back to Resume Editor...`);
       metrics.violations.forEach(v => console.log(`   - ${v}`));
-      previousFeedback = `[규격 실측 실패]\n${violationMsg}\n현재 글자 수: ${metrics.metrics.charWithSpaces}자 (목표: ${questionData.minLimit}~${questionData.maxLimit}자). 글자 수를 정밀하게 조정하고 금지어를 제거하십시오.`;
+      previousFeedback = `[규격 실측 실패 - 오차값 추출]\n${violationMsg}\n현재 글자 수: ${metrics.metrics.charWithSpaces}자 (목표: ${questionData.minLimit}~${questionData.maxLimit}자).\n★이미 통과한 좋은 문맥과 스토리 구조는 철저히 유지하고, 지적된 오차(글자 수/금지어)만 정밀하게 조정하십시오.`;
       iterationLogs.push({ attempt, phase: 'Verifier FAIL', charCount: metrics.metrics.charWithSpaces, feedback: violationMsg });
       attempt++;
       continue;
@@ -337,7 +337,7 @@ ${currentDraft}
 
     if (!auditResult.allPass) {
       console.log(`⚠️ [Loop Action] Fact Checker REJECTED: ${auditResult.critique}`);
-      previousFeedback = `[감찰관 지적사항 - REJECT]\n${auditResult.critique}\n내용의 딜레마와 인과관계를 보강하되, 글자 수 규격(${questionData.minLimit}~${questionData.maxLimit}자)을 절대 벗어나지 마십시오.`;
+      previousFeedback = `[감찰관 지적사항 - REJECT]\n${auditResult.critique}\n★수정해야 할 결함 부분만 집중 보완하고, 이미 검증 통과한 글자 수 규격(${questionData.minLimit}~${questionData.maxLimit}자)과 좋은 스토리라인은 철저히 유지하십시오.`;
       iterationLogs.push({ attempt, phase: 'FactChecker REJECT', charCount: metrics.metrics.charWithSpaces, feedback: auditResult.critique });
       attempt++;
       continue;
