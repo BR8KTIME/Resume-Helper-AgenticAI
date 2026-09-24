@@ -5,9 +5,10 @@
  * 
  * Features:
  * 1. Autonomous Closed-Loop: Resume Editor (LLM) ➔ Deterministic Verifier (Code) ➔ Fact Checker (LLM)
- * 2. Real-time Closed-Loop Feedback: Automatically re-prompts LLM with exact metric deltas upon failure
- * 3. Zero external dependencies: Uses native Node.js fetch for Google Gemini API
- * 4. Graceful Fallback: Runs deterministic verification mode if API key is not provided
+ * 2. Dynamic Agent Loading: Directly loads prompts from agents/ folder (Single Source of Truth)
+ * 3. Real-time Closed-Loop Feedback: Automatically re-prompts LLM with exact metric deltas upon failure
+ * 4. Zero external dependencies: Uses native Node.js fetch for Google Gemini API
+ * 5. Graceful Fallback: Runs deterministic verification mode if API key is not provided
  * 
  * Usage:
  *   node tools/orchestrator.js [--input <file>] [--output <file>] [--key <apiKey>] [--model <modelName>]
@@ -46,6 +47,18 @@ loadEnv();
 const CAUTION_PATTERNS = [
   { pattern: /이를\s*(?:해결하기\s*)?위해/g, maxAllowed: 1, label: '접속 클리셰 남발 ("이를 위해" ➔ 1회 이하 권장)' }
 ];
+
+/**
+ * Dynamically load agent persona instruction from agents/*.md
+ * Preserves Single Source of Truth architecture.
+ */
+function loadAgentInstruction(fileName, fallback = '') {
+  const agentPath = path.resolve(__dirname, `../agents/${fileName}`);
+  if (fs.existsSync(agentPath)) {
+    return fs.readFileSync(agentPath, 'utf-8');
+  }
+  return fallback;
+}
 
 function parseQuestionBlock(blockText) {
   const companyMatch = blockText.match(/\*\s*\*\*지원 기업\*\*:\s*(.*)/i);
@@ -131,9 +144,15 @@ function measureDraft(text, limits) {
   if (cliches.length > 0) {
     cliches.forEach(c => violations.push(`금지 클리셰 검출: ${c.label} (${c.count}회)`));
   }
+  for (const cp of CAUTION_PATTERNS) {
+    const matches = (text.match(cp.pattern) || []).length;
+    if (matches > cp.maxAllowed) {
+      violations.push(`주의 패턴 감지: ${cp.label} (${matches}회 사용 / 최대 ${cp.maxAllowed}회 이하 준수)`);
+    }
+  }
 
   return {
-    allPass: lengthPass && clichePass,
+    allPass: lengthPass && clichePass && violations.length === 0,
     lengthPass,
     clichePass,
     violations,
@@ -151,8 +170,16 @@ function measureDraft(text, limits) {
 /**
  * Call Google Gemini REST API using native fetch
  */
-async function callGeminiAPI(apiKey, prompt, systemInstruction, model = 'gemini-1.5-flash') {
+async function callGeminiAPI(apiKey, prompt, systemInstruction, model = 'gemini-1.5-flash', jsonMode = false) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const generationConfig = {
+    temperature: jsonMode ? 0.1 : 0.3,
+    maxOutputTokens: 2048
+  };
+  if (jsonMode) {
+    generationConfig.responseMimeType = 'application/json';
+  }
+
   const payload = {
     contents: [
       {
@@ -160,10 +187,7 @@ async function callGeminiAPI(apiKey, prompt, systemInstruction, model = 'gemini-
         parts: [{ text: prompt }]
       }
     ],
-    generationConfig: {
-      temperature: 0.3,
-      maxOutputTokens: 2048
-    }
+    generationConfig
   };
 
   if (systemInstruction) {
@@ -186,6 +210,9 @@ async function callGeminiAPI(apiKey, prompt, systemInstruction, model = 'gemini-
   const data = await response.json();
   const candidate = data.candidates && data.candidates[0];
   if (!candidate || !candidate.content || !candidate.content.parts || !candidate.content.parts[0]) {
+    if (candidate && candidate.finishReason && candidate.finishReason !== 'STOP') {
+      throw new Error(`Gemini API generation halted: finishReason = ${candidate.finishReason}`);
+    }
     throw new Error('Gemini API returned empty response');
   }
 
@@ -202,43 +229,16 @@ async function runAutonomousLoop(questionData, apiKey, model) {
   let previousFeedback = '';
   const iterationLogs = [];
 
-  const resumeEditorInstruction = `
-당신은 전문 기술 자기소개서 첨삭 에이전트(Resume Editor Agent)입니다.
-공학 지원자의 실제 경험과 아이디어를 바탕으로 최고 수준의 합격 자기소개서를 작성합니다.
+  // Load instructions dynamically from Single Source of Truth
+  const resumeEditorInstruction = loadAgentInstruction(
+    'resume_editor.md',
+    '당신은 전문 기술 자기소개서 첨삭 에이전트입니다. STAR 구조와 두괄식, 정밀한 글자 수를 준수하여 작성하십시오.'
+  );
 
-[절대 준수 4대 작성 원칙]
-1. 반드시 두괄식: 첫 1~2문장에서 본인의 핵심 결론, 판단 기준, 또는 직무 철학을 즉시 제시하십시오.
-2. STAR 공학 분량 배분:
-   - 상황(Situation): 최대 20~30% 이내로 간결히 배경만 서술.
-   - 행동 및 딜레마(Action & Process): 60% 이상 집중. 직면했던 난관, 오차, 버그, 대안 선택 이유를 구체적으로 서술.
-   - 결과(Result): 최대 2줄 이내로 간결하게 마무리.
-3. Anti-AI 어휘 엄격 준수:
-   - "귀사", "시너지", "역량을 함양", "기여하고 싶습니다", 가운뎃점(·), 거창한 미사여구(초격차, 글로벌 1위)를 전면 금지합니다.
-   - 담백하고 단단한 공학적 어조(~생각했습니다, ~판단했습니다, ~완성하겠습니다, ~함께 성장하고 싶습니다)를 유지하십시오.
-4. 엄격한 글자 수 규격 준수:
-   - 허용 범위: 공백 포함 최소 ${questionData.minLimit}자 ~ 최대 ${questionData.maxLimit}자.
-   - 마크다운 코드블록이나 불필요한 서두 없이 순수 본문 텍스트만 출력하십시오.
-`;
-
-  const factCheckerInstruction = `
-당신은 엄격한 통합 팩트체커 & 무결성 감찰관(Fact Checker Agent)입니다.
-작성된 자기소개서 초안을 아래 6대 고정 기준으로 가차 없이 비판 감찰하고 채점합니다.
-
-[6대 고정 감사 기준]
-1. [지원자 원문 흐름 보존]: 고유 딜레마 및 문제 해결 흐름 보존 여부
-2. [AI식 과도한 압축 및 문체 차단]: 두괄식 준수 및 자연스러운 리듬감
-3. [어렵고 추상적인 단어 배제]: 모호한 미사여구 배제, 실전 엔지니어링 어휘 사용 여부
-4. [논리 인과관계 및 개연성]: [문제 ➔ 한계 ➔ 원인 분석 ➔ 대안 선택 ➔ 검증] 사슬 무결성
-5. [솔직한 공학적 어조]: 담백한 어조 일치 여부
-6. [사고의 과정 70% 이상]: 딜레마/판단 궤적 70% 집중, 상투어 배제 여부
-
-반드시 JSON 형식으로만 응답하십시오:
-{
-  "allPass": true/false,
-  "summary": "총평 요약",
-  "critique": "탈락 시 수정해야 할 구체적 보완 지시사항 (통과 시 비움)"
-}
-`;
+  const factCheckerInstruction = loadAgentInstruction(
+    'fact_checker.md',
+    '당신은 엄격한 통합 팩트체커 감찰관입니다. 6대 감사 기준을 바탕으로 JSON 포맷으로만 응답하십시오.'
+  );
 
   console.log(`\n====================================================================`);
   console.log(`🚀 [Autonomous Loop] Starting for: ${questionData.question}`);
@@ -258,7 +258,7 @@ async function runAutonomousLoop(questionData, apiKey, model) {
 [지원자 메모 및 핵심 소재]:
 ${questionData.userIdea}
 
-위 소재를 바탕으로 4대 작성 원칙에 맞춰 완벽한 자기소개서 본문을 작성하십시오.
+위 소재를 바탕으로 지침에 맞춰 완벽한 자기소개서 본문을 작성하십시오. 마크다운 코드블록이나 불필요한 해설 없이 순수 본문 텍스트만 출력하십시오.
 `;
     } else {
       prompt = `
@@ -272,12 +272,12 @@ ${currentDraft}
 [🚨 검증 엔진 및 감찰관 피드백 - 반드시 반영할 결함]:
 ${previousFeedback}
 
-위 피드백을 정확히 반영하여, 딜레마와 공학적 판단을 유지하면서 글자 수(${questionData.minLimit}~${questionData.maxLimit}자)를 엄격히 맞추어 다시 작성하십시오.
+위 피드백을 정확히 반영하여, 딜레마와 공학적 판단을 유지하면서 글자 수(${questionData.minLimit}~${questionData.maxLimit}자)를 엄격히 맞추어 다시 작성하십시오. 순수 본문 텍스트만 출력하십시오.
 `;
     }
 
     try {
-      currentDraft = await callGeminiAPI(apiKey, prompt, resumeEditorInstruction, model);
+      currentDraft = await callGeminiAPI(apiKey, prompt, resumeEditorInstruction, model, false);
       currentDraft = currentDraft.replace(/^```[a-z]*\n/i, '').replace(/\n```$/i, '').trim();
     } catch (err) {
       console.error(`❌ [Agent Error] Resume Editor failed: ${err.message}`);
@@ -300,22 +300,32 @@ ${previousFeedback}
 
     // Step 3: Semantic Audit (Fact Checker Agent)
     console.log(`🕵️ [Auditor] Calling Fact Checker Agent for 6-point semantic audit...`);
-    let auditResult = { allPass: true, summary: 'Clean audit', critique: '' };
+    let auditResult = { allPass: false, summary: '감찰 수행 중', critique: '감찰 결과 수신 대기' };
     try {
       const auditPrompt = `
 [문항]: ${questionData.question}
+[지원 기업]: ${questionData.company}
+[글자 수 규격]: ${questionData.minLimit}~${questionData.maxLimit}자
 [검토할 자소서 본문]:
 ${currentDraft}
 
-위 본문을 6대 고정 기준에 따라 심사하고 JSON으로 응답하십시오.
+위 본문을 6대 고정 기준([지원자 원문 흐름 보존], [AI식 과도한 압축 및 문체 차단], [어렵고 추상적인 단어 배제], [논리 인과관계 및 개연성], [솔직한 공학적 어조], [사고의 과정 70% 이상])에 따라 엄격히 심사하고 JSON 포맷으로만 응답하십시오:
+{
+  "allPass": true 또는 false,
+  "summary": "총평 요약",
+  "critique": "탈락 시 수정해야 할 구체적 보완 지시사항 (통과 시 빈 문자열)"
+}
 `;
-      const auditRaw = await callGeminiAPI(apiKey, auditPrompt, factCheckerInstruction, model);
+      const auditRaw = await callGeminiAPI(apiKey, auditPrompt, factCheckerInstruction, model, true);
       const jsonMatch = auditRaw.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         auditResult = JSON.parse(jsonMatch[0]);
+      } else {
+        auditResult = { allPass: false, summary: 'JSON 파싱 실패', critique: '감찰 결과가 올바른 JSON 형식이 아닙니다.' };
       }
     } catch (err) {
-      console.warn(`⚠️ [Audit Warning] Fact checker parsing fallback: ${err.message}`);
+      console.warn(`⚠️ [Audit Warning] Fact checker call failed: ${err.message}`);
+      auditResult = { allPass: false, summary: '감찰 호출 에러', critique: `API 에러 또는 파싱 실패: ${err.message}` };
     }
 
     if (!auditResult.allPass) {
@@ -345,7 +355,7 @@ ${currentDraft}
     success: finalMetrics.allPass,
     draftText: currentDraft,
     metrics: finalMetrics,
-    auditResult: { allPass: false, summary: 'Max retries reached' },
+    auditResult: { allPass: false, summary: '최대 재시도 횟수 초과' },
     attempts: attempt,
     iterationLogs
   };
