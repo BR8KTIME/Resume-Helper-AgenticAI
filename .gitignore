@@ -16,7 +16,12 @@ my_cover_letters.md
 companies/
 *.private.*
 
+# Local Workspace & Generated Outputs
+draft_input.md
+draft_output.md
+
 # Logs & System
 *.log
 .DS_Store
 Thumbs.db
+

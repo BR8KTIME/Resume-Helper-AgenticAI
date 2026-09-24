@@ -92,46 +92,63 @@ flowchart TD
 
 ```text
 Resume-Helper-AgenticAI/
-├── README.md               # Documentation & workflow overview
-├── package.json            # Scripts & project metadata
-├── LICENSE                 # MIT License
-├── .gitignore              # Privacy safeguards
-├── agents/                 # Specialized agent specifications
-│   ├── job_analyst.md      # JD deconstruction
-│   ├── resume_editor.md    # STAR draft generator
-│   └── fact_checker.md     # Independent audit gatekeeper
-├── tools/                  # Deterministic verification tools
-│   ├── verify_essay.js     # Character, byte, and cliché validator
-│   └── orchestrator.js     # Pipeline entrypoint
-├── tests/                  # Automated test suite
-│   ├── test_cases.json     # Standard evaluation cases
-│   └── run_tests.js        # Test runner
-└── samples/                # Sample demonstration data
-    ├── sample_profile.md   # Mock candidate profile (Marketing Specialist)
-    └── sample_output.md    # Verified sample essay
+├── README.md                  # Documentation & workflow overview
+├── package.json               # Scripts & project metadata
+├── LICENSE                    # MIT License
+├── .gitignore                 # Privacy safeguards
+├── draft_input.template.md    # Starter template for drafting essays
+├── agents/                    # Specialized agent specifications
+│   ├── job_analyst.md         # JD deconstruction
+│   ├── resume_editor.md       # STAR draft generator
+│   └── fact_checker.md        # Independent audit gatekeeper
+├── tools/                     # Deterministic verification tools
+│   ├── verify_essay.js        # Character, byte, and cliché validator
+│   └── orchestrator.js        # Full pipeline runner (360+ lines)
+├── tests/                     # Automated test suite
+│   ├── test_cases.json        # Standard evaluation cases
+│   └── run_tests.js           # Test runner
+└── samples/                   # Sample demonstration data
+    ├── sample_profile.md      # Mock candidate profile (Marketing Specialist)
+    ├── sample_input.md        # Pre-configured input notes & draft
+    └── sample_output.md       # Verified sample essay & audit report
 ```
 
 ---
 
 ## ⚡ Getting Started
 
-### 1. Run the Test Suite
-Test the verification tools against the standard evaluation cases:
+### 1. Run the Autonomous Pipeline Orchestrator (`orchestrator.js`)
+Execute the end-to-end multi-agent verification pipeline. Running without arguments automatically launches an interactive demo using `samples/sample_input.md`:
 ```bash
-npm test
+# Run the demo pipeline (generates draft_output.md):
+node tools/orchestrator.js
+
+# Or process a custom input file:
+node tools/orchestrator.js --input ./samples/sample_input.md --output ./draft_output.md
+
+# To draft your own essay, copy the starter template:
+cp draft_input.template.md draft_input.md
+# (Fill in your target enterprise, prompt, and draft text in draft_input.md)
+node tools/orchestrator.js
 ```
 
-### 2. Verify an Essay Draft Directly
-Check any draft text for character limits, byte sizes, and clichés:
+### 2. Standalone Quantitative Verification Tool (`verify_essay.js`)
+Check any individual draft snippet or file for exact character counts, EUC-KR bytes, and clichés:
 ```bash
-# Check with character limits (e.g., 500 to 1,000 characters)
-node tools/verify_essay.js --text "Your draft essay here..." --min 500 --max 1000
+# Verify character limits (e.g., 500 to 800 characters)
+node tools/verify_essay.js --text "Your draft essay text here..." --min 500 --max 800
 
-# Check EUC-KR byte limits (e.g., max 2,000 bytes)
-node tools/verify_essay.js --text "Your draft essay here..." --max 2000 --type euckr
+# Verify EUC-KR byte limits (e.g., max 2,000 bytes)
+node tools/verify_essay.js --text "Your draft essay text here..." --max 2000 --type euckr
 
-# Validate an entire file and output JSON
+# Validate an entire file and output structured JSON
 node tools/verify_essay.js --file ./samples/sample_output.md --json
+```
+
+### 3. Run the Automated Regression Test Suite
+Run continuous integration tests against diverse evaluation cases:
+```bash
+npm test
 ```
 
 ---

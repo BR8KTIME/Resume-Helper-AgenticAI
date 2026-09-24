@@ -278,10 +278,16 @@ function run() {
   }
 
   if (!fs.existsSync(inputPath)) {
-    const templatePath = path.resolve(__dirname, '../draft_input.template.md');
-    console.log(`ℹ️ [안내] 입력 파일 '${inputPath}'이 없습니다.`);
-    console.log(`   '${templatePath}'을 복사하여 아이디어를 작성하신 후 다시 실행해 주세요.`);
-    process.exit(0);
+    const sampleInputPath = path.resolve(__dirname, '../samples/sample_input.md');
+    if (fs.existsSync(sampleInputPath)) {
+      console.log(`ℹ️ [Notice] 'draft_input.md' not found. Running demo pipeline on sample input: '${sampleInputPath}'...\n`);
+      inputPath = sampleInputPath;
+    } else {
+      const templatePath = path.resolve(__dirname, '../draft_input.template.md');
+      console.log(`ℹ️ [Notice] Input file '${inputPath}' not found.`);
+      console.log(`   Please copy '${templatePath}' to 'draft_input.md' to write your draft.`);
+      process.exit(0);
+    }
   }
 
   const parsed = parseInputFile(inputPath);
