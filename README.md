@@ -233,81 +233,6 @@ Resume-Helper-AgenticAI/
 
 ---
 
-## 🛠️ CLI Usage & Quickstart
-
-### 1. Run the Boundary Regression Suite
-
-```bash
-node tools/test_hard_vs_heuristic.js
-```
-
-### 2. Run the Full Test Suite
-
-```bash
-npm test
-```
-
-### 3. Verify an Essay Draft
-
-```bash
-# Verify character limits
-node tools/verify_essay.js \
-  --text "Your essay content..." \
-  --max 500
-```
-
-### 4. Get Structured JSON Output
-
-```bash
-node tools/verify_essay.js \
-  --text "Your essay content..." \
-  --max 500 \
-  --json
-```
-
-### 5. Verify a Draft from a File
-
-```bash
-node tools/verify_essay.js \
-  --file samples/sample_output.md \
-  --max 800
-```
-
----
-
-## 🧪 Example Validation Output
-
-A draft can simultaneously satisfy a hard constraint while triggering a heuristic warning:
-
-```text
-Character Count: 500 / 500
-Status: PASS
-
-Cliché Detection:
-- "synergy" detected
-
-Overall Status:
-PASS + WARNING
-```
-
-A hard constraint violation remains a failure even when heuristic warnings are also present:
-
-```text
-Character Count: 501 / 500
-Status: FAIL
-Delta: +1
-
-Cliché Detection:
-- "synergy" detected
-
-Overall Status:
-FAIL + WARNING
-```
-
-This separation is a core design principle of the system.
-
----
-
 ## 🔍 Design Philosophy
 
 The project follows a simple engineering principle:
@@ -331,24 +256,6 @@ Code is preferable for:
 * Regression testing.
 
 This separation makes the system more predictable than relying on a single LLM prompt to perform generation, validation, and self-correction simultaneously.
-
----
-
-## 🚧 Current Limitations
-
-The system intentionally does not claim to provide perfect factual verification.
-
-Semantic claims such as:
-
-* "Did the candidate actually implement this algorithm?"
-* "Was this metric really achieved?"
-* "Does this sentence exaggerate the candidate's contribution?"
-
-require contextual judgment and are therefore audited by an LLM-based reviewer.
-
-Likewise, the current EUC-KR/CP949 byte calculation is deterministic but does not perform full native character encoding. It should therefore be treated as an estimation rule rather than a general-purpose EUC-KR encoder.
-
-These limitations are documented explicitly to keep the system's claims aligned with its implementation.
 
 ---
 
