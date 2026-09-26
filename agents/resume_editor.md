@@ -104,7 +104,7 @@
    * 지원자가 문항 작성을 요청하면, 지원자와의 불필요한 중간 핑퐁을 없애기 위해 백그라운드에서 다음 루프를 자체 완결한다:
      - `[1단계 초안 생성]` ➔ STAR 및 공학적 사고 궤적 중심 작성
      - `[2단계 실측 도구 실행]` ➔ `node tools/verify_essay.js`를 호출하여 공백 포함/제외 글자 수 및 바이트 수 정밀 실측
-     - `[3단계 팩트체커 감사]` ➔ `/fact-check` 스킬([SKILL.md](file:///C:/Users/lifeo/.gemini/config/skills/fact-check/SKILL.md)) 6대 기준 자체 감사
+     - `[3단계 팩트체커 감사]` ➔ `fact_checker` 에이전트([fact_checker.md](fact_checker.md)) 6대 기준 자체 감사
      - `[4단계 결함 자체 수정]` ➔ FAIL 항목 발생 시 최대 2회 내부 수정 루프 수행
    * 최종적으로 지원자에게는 **"6대 감사 통과 리포트 + verify_essay 실측 지표 + 완성형 초안"**을 단 1턴 만에 제공하여 최종 승인 여부만 확인받는다.
 
