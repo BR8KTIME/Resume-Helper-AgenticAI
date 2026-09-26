@@ -123,15 +123,26 @@ function extractSectionContent(fullContent, sectionQuery) {
 }
 
 function calculateBytes(str, mode = 'euckr') {
+  if (mode === 'utf8') {
+    // Node.js 공식 표준 UTF-8 바이트 계산 (Buffer.byteLength)
+    return Buffer.byteLength(str, 'utf8');
+  }
+
+  // EUC-KR / CP949 정밀 바이트 계산:
+  // - ASCII 영역 (0x00 ~ 0x7F): 1바이트
+  // - 완성형 한글, 한글 자모, 한자, 전각 기호: 2바이트
+  // - 4바이트 유니코드 서로게이트 페어(이모지 등): 코드포인트 단위로 순회하여 2바이트 처리
   let bytes = 0;
   for (let i = 0; i < str.length; i++) {
-    const charCode = str.charCodeAt(i);
-    if (charCode <= 0x007f) {
+    const codePoint = str.codePointAt(i);
+    if (codePoint > 0xffff) {
+      i++; // 서로게이트 페어(2개의 16비트 유닛) 1칸 건너뜀
+      bytes += 2;
+      continue;
+    }
+    if (codePoint <= 0x007f) {
       bytes += 1;
-    } else if (mode === 'utf8') {
-      bytes += 3;
     } else {
-      // euckr 기준 한글/특수문자 2바이트
       bytes += 2;
     }
   }
