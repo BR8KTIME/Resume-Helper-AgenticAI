@@ -1,4 +1,4 @@
-# Job-Application-Essay-Helper
+# Resume-Helper-AgenticAI
 
 [![Google Antigravity](https://img.shields.io/badge/Powered%20by-Google%20Antigravity-4285F4.svg)]()
 [![Node.js Version](https://img.shields.io/badge/node.js-18%2B-green.svg)](https://nodejs.org/)
