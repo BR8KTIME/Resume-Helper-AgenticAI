@@ -1,7 +1,5 @@
 # 🚀 Resume-Helper-AgenticAI
 
-> **"Beyond simple prompt engineering: Decoupling Hard Constraints from Heuristic Quality Signals, enforced by a deterministic verification engine and verified with boundary regression tests."**
-
 Resume-Helper-AgenticAI is an autonomous, multi-agent closed-loop system designed for high-stakes employment essays and technical applications. It eliminates LLM hallucinations, blocks corporate clichés, strictly enforces character and byte constraints, and preserves authentic candidate voice through deterministic code verification.
 
 ---
@@ -113,7 +111,6 @@ node tools/verify_essay.js --file samples/sample_output.md --max 800
 ## 👤 Author
 * **Hasung Cho**
   * Email: lifeofcho23@gmail.com
-  * GitHub: [@BR8KTIME](https://github.com/BR8KTIME)
 
 ---
 
