@@ -110,8 +110,10 @@ node tools/verify_essay.js --file samples/sample_output.md --max 800
 
 ---
 
-## 👥 Maintainers & Contributors
-* Resume-Helper-AgenticAI Open Source Contributors
+## 👤 Author
+* **Hasung Cho**
+  * Email: lifeofcho23@gmail.com
+  * GitHub: [@BR8KTIME](https://github.com/BR8KTIME)
 
 ---
 
