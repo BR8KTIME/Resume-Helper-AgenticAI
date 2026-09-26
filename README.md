@@ -17,7 +17,7 @@ Writing technical and corporate application essays requires meeting **strict, un
 * **Multi-byte encoding limits** (EUC-KR 2-byte, UTF-8 3-byte systems).
 * **Authentic voice & anti-cliché** (avoiding generic buzzwords, robotic monotony, and AI over-polishing).
 
-Large Language Models (LLMs) struggle with deterministic character arithmetic and self-auditing. **Resume-Helper-AgenticAI** solves this by cleanly separating **Hard Constraints** (enforced deterministically via code) from **Heuristic Quality Signals** (reported as indicative warnings), coordinating specialized subagents (`job_analyst`, `resume_editor`, `fact_checker`) in an autonomous closed loop (Evaluator-Optimizer Pattern).
+Rather than relying on an LLM to enforce exact constraints, the system delegates deterministic checks to executable validators and reserves LLMs for generation, semantic analysis, and revision.
 
 ---
 
@@ -100,10 +100,6 @@ flowchart TD
   - **Rule 16: Anti-Overpolishing & Authentic Voice Preservation**: Strictly forbids generic corporate reporting speak. Preserves 80%+ of the candidate's natural conversational phrasing and raw engineering dilemmas, practicing **Minimal Invasive Editing**.
   - **STAR Plot & Action 60%+**: Focuses the majority of length on concrete actions, technical tradeoffs, and bottom-line-first conclusions.
 * **`fact_checker` (`agents/fact_checker.md`)**: Operates as a blind auditor evaluating drafts against a strict 6-point integrity rubric (JD alignment, hallucination detection, anti-monotony, name-swapping tests, and authentic voice consistency).
-
-### 3. 🎯 Key Engineering Innovations in v2.0
-* **Deterministic Markdown Code Block Extraction**: `tools/verify_essay.js` automatically strips markdown headers and metadata tables, targeting exclusively pure essay text inside ````text ```` blocks with zero byte offset errors.
-* **Single-Session Delta Revision Protocol**: Instead of resetting subagent contexts on every retry, feedback is injected incrementally via targeted messaging (`send_message`), preserving context and converging to optimal character counts in 1~2 iterations.
 
 ---
 
