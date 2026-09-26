@@ -86,3 +86,21 @@
 
 - 6개 항목 중 단 1개라도 FAIL이 있으면 최종 판정은 무조건 **`[REJECT - 보완 필요]`**로 종결하고 수정 방향을 보고한다.
 - 6개 항목이 모두 통과되었을 때만 **`[APPROVED - 최종 승인]`** 판정을 내린다.
+- **`EssayState.qualitativeCheck` JSON 블록 출력 의무화**:
+  보고서 말미에는 오케스트레이터의 자동화된 피드백 파싱을 위해 반드시 아래 규격의 JSON 블록을 포함해야 한다:
+  ```json
+  {
+    "qualitativeCheck": {
+      "passed": true,
+      "issues": [],
+      "schemaResults": {
+        "csFactIntegrity": true,
+        "sentenceVariance": true,
+        "antiCliché": true,
+        "causalLogic": true,
+        "authenticVoice": true,
+        "thinkingProcessRatio": true
+      }
+    }
+  }
+  ```

@@ -143,7 +143,11 @@ function findCliches(text) {
   for (const item of BANNED_PATTERNS) {
     const matches = text.match(item.pattern);
     if (matches) {
-      detected.push({ label: item.label, count: matches.length });
+      detected.push({
+        label: item.label,
+        count: matches.length,
+        severity: 'LOW'
+      });
     }
   }
   return detected;
@@ -187,9 +191,12 @@ function run() {
   // 클리셰 분석
   const detectedCliches = findCliches(targetText);
 
-  // 규격 검증
+  // ------------------------------------------------------------
+  // Hard constraints
+  // ------------------------------------------------------------
   let pass = true;
   const violations = [];
+  const warnings = [];
 
   let primaryCount = charWithSpaces;
   let primaryUnit = '자(공백포함)';
@@ -219,9 +226,21 @@ function run() {
     }
   }
 
+  // ------------------------------------------------------------
+  // Heuristic quality signals
+  // ------------------------------------------------------------
+  // Cliché detection is intentionally NOT a hard failure.
+  // A detected phrase may be contextually acceptable, so it is
+  // reported as a warning for the editor rather than a violation.
   if (detectedCliches.length > 0) {
-    pass = false;
-    detectedCliches.forEach(c => violations.push(`금지어/클리셰 검출: ${c.label} (${c.count}회)`));
+    detectedCliches.forEach(c => {
+      warnings.push({
+        type: 'CLICHE',
+        severity: c.severity,
+        message: `상투적 표현 가능성: ${c.label}`,
+        count: c.count
+      });
+    });
   }
 
   // 문장별 길이 및 균일성(Variance) 정밀 분석
@@ -235,15 +254,20 @@ function run() {
   const maxLen = sentenceLengths.length > 0 ? Math.max(...sentenceLengths) : 0;
   const avgLen = sentenceLengths.length > 0 ? Math.round(sentenceLengths.reduce((a, b) => a + b, 0) / sentenceLengths.length) : 0;
 
-  // 문장 길이가 40~60자 사이에 90% 이상 갇혀있고 min/max 차이가 20자 미만이면 AI 단조로움 경고
+  // 문장 길이가 지나치게 균일한 경우 heuristic warning.
+  // This MUST NOT change the hard-constraint PASS/FAIL result.
   let isMonotonous = false;
   if (sentenceLengths.length >= 4 && (maxLen - minLen) <= 20 && avgLen >= 40 && avgLen <= 60) {
     isMonotonous = true;
-    pass = false;
-    violations.push(`🚨 AI식 기계적 문장 단조로움 적발: 모든 문장이 ${minLen}~${maxLen}자(평균 ${avgLen}자)로 지나치게 일관된 길이입니다. 단문(20~35자)과 복문(70~90자)의 호흡 완급을 조절하세요.`);
+    warnings.push({
+      type: 'SENTENCE_VARIANCE',
+      severity: 'MEDIUM',
+      message: `문장 길이가 지나치게 균일합니다: ${minLen}~${maxLen}자 (평균 ${avgLen}자). 문장 호흡을 다양화하는 것을 권장합니다.`
+    });
   }
 
   const result = {
+    // Status is determined ONLY by hard constraints.
     status: pass ? 'PASS' : 'FAIL',
     file: options.file || 'DIRECT_TEXT',
     section: options.section || 'ALL',
@@ -258,18 +282,44 @@ function run() {
       min: options.min,
       type: options.type
     },
+    hard_constraints: {
+      passed: violations.length === 0,
+      violationCount: violations.length,
+      violations
+    },
+    quality_signals: {
+      warningCount: warnings.length,
+      warnings
+    },
     cliches: detectedCliches,
-    violations
+    sentence_analysis: {
+      count: sentenceLengths.length,
+      min: minLen,
+      max: maxLen,
+      average: avgLen,
+      monotonous: isMonotonous
+    },
+    quantitativeCheck: {
+      passed: pass,
+      charCount: charWithSpaces,
+      byteCount: bytesEucKr,
+      violations,
+      warnings,
+      delta: options.max ? options.max - primaryCount : 0
+    }
   };
 
   if (options.json) {
     console.log(JSON.stringify(result, null, 2));
+    if (!pass) {
+      process.exitCode = 1;
+    }
     return;
   }
 
   // 콘솔 포맷 출력
   console.log('====================================================');
-  console.log(`🔍 [verify_essay] 검증 결과: ${pass ? '✅ PASS' : '❌ FAIL'}`);
+  console.log(`🔍 [verify_essay] 검증 결과: ${pass ? (warnings.length > 0 ? '✅ PASS (⚠️ WITH WARNINGS)' : '✅ PASS') : '❌ FAIL'}`);
   console.log('====================================================');
   console.log(`• 파일/섹션: ${result.file} [${result.section}]`);
   console.log(`• 공백 포함 글자수: ${charWithSpaces.toLocaleString()} 자`);
@@ -278,19 +328,25 @@ function run() {
   console.log(`• 바이트수 (UTF-8 3byte) : ${bytesUtf8.toLocaleString()} Bytes`);
   
   if (detectedCliches.length > 0) {
-    console.log('🚨 금지 표현 감지:');
+    console.log('⚠️ 상투적 표현 감지 (Heuristic Warning):');
     detectedCliches.forEach(c => console.log(`   - ${c.label} (${c.count}회)`));
   } else {
     console.log('• 금지어/클리셰: 이상 없음 (Clean)');
   }
 
   // 문장별 리듬감(호흡) 통계 출력
-  console.log(`• 문장 호흡/리듬감: 총 ${rawSentences.length}개 문장 (최단 ${minLen}자 ~ 최장 ${maxLen}자 / 평균 ${avgLen}자) ${isMonotonous ? '❌ AI 단조로움' : '✅ 양호'}`);
+  console.log(`• 문장 호흡/리듬감: 총 ${rawSentences.length}개 문장 (최단 ${minLen}자 ~ 최장 ${maxLen}자 / 평균 ${avgLen}자) ${isMonotonous ? '⚠️ 호흡 단조로움 주의' : '✅ 양호'}`);
   console.log(`  - 문장별 길이: [${sentenceLengths.map(l => l + '자').join(', ')}]`);
+
+  if (warnings.length > 0) {
+    console.log('----------------------------------------------------');
+    console.log('⚠️ 품질 개선 권고 사항 (Heuristic Warnings):');
+    warnings.forEach(w => console.log(`   - [${w.type}] ${w.message}`));
+  }
 
   if (violations.length > 0) {
     console.log('----------------------------------------------------');
-    console.log('❌ 위반 및 보완 항목:');
+    console.log('❌ 필수 규격 위반 항목 (Hard Violations):');
     violations.forEach(v => console.log(`   - ${v}`));
   }
   console.log('====================================================');
