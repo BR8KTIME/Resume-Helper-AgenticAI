@@ -1,10 +1,10 @@
 {
   "name": "resume-helper-agentic-ai",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Antigravity Multi-Agent Workflow Template for writing and mathematically verifying job application essays",
   "main": "tools/verify_essay.js",
   "scripts": {
-    "test": "node tests/run_tests.js",
+    "test": "node tests/test_hard_vs_heuristic.js && node tests/run_tests.js",
     "verify": "node tools/verify_essay.js",
     "validate": "node tools/validate_intake.js"
   },

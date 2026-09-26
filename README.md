@@ -15,17 +15,15 @@
 Writing technical and corporate application essays requires meeting **strict, unforgiving constraints**:
 * **Exact character limits** (with/without spaces).
 * **Multi-byte encoding limits** (EUC-KR 2-byte, UTF-8 3-byte systems).
-* **Zero AI clichés & monotony** (filtering out generic buzzwords like "synergy", uniform sentence cadences, and fabricated claims).
+* **Authentic voice & anti-cliché** (avoiding generic buzzwords, robotic monotony, and AI over-polishing).
 
-Large Language Models (LLMs) struggle with deterministic math, character counting, and consistent self-auditing. 
-
-**Resume-Helper-AgenticAI** solves this by leveraging **Google Antigravity's native multi-agent orchestration**.  Antigravity's **Main Agent** acts as the orchestrator, collaborating with specialized subagents (`job_analyst`, `resume_editor`, `fact_checker`) and enforcing **deterministic code gates** (`validate_intake.js`, `verify_essay.js`) in an autonomous closed loop (Evaluator-Optimizer Pattern).
+Large Language Models (LLMs) struggle with deterministic character arithmetic and self-auditing. **Resume-Helper-AgenticAI** solves this by cleanly separating **Hard Constraints** (enforced deterministically via code) from **Heuristic Quality Signals** (reported as indicative warnings), coordinating specialized subagents (`job_analyst`, `resume_editor`, `fact_checker`) in an autonomous closed loop (Evaluator-Optimizer Pattern).
 
 ---
 
 ## 🏗️ System Architecture & Multi-Agent Closed-Loop
 
-The system decouples drafting from deterministic verification to eliminate AI hallucinations and ensure quantitative compliance:
+The system decouples drafting from deterministic verification, enforcing hard constraints while preserving authentic human voice:
 
 ```mermaid
 flowchart TD
@@ -37,17 +35,17 @@ flowchart TD
         Orch["Orchestrator<br/>(Coordinates Subagents & Gate Tools)"]
     end
 
-    subgraph SG_Gate1["Gate 1: Deterministic Code"]
+    subgraph SG_Gate1["Gate 1: Input Contract"]
         VIntake["tools/validate_intake.js<br/>(Verifies 5 Mandatory Inputs)"]
         UserPrompt["Block & Request Missing Info"]
     end
 
     subgraph SG_Editor["Subagent: Drafting & Optimization"]
-        Editor["resume_editor<br/>(STAR Plot, Action 60%, Bottom-Line First)"]
+        Editor["resume_editor<br/>(STAR Narrative, Rule 16: Voice Preservation)"]
     end
 
-    subgraph SG_Gate2["Gate 2: Deterministic Code"]
-        VEssay["tools/verify_essay.js<br/>(Exact Chars, EUC-KR Bytes, Clichés, Variance)"]
+    subgraph SG_Gate2["Gate 2: Deterministic Code Verification"]
+        VEssay["tools/verify_essay.js<br/>(Hard Constraints vs Heuristic Signals)"]
     end
 
     subgraph SG_Checker["Subagent: Qualitative Audit"]
@@ -55,7 +53,7 @@ flowchart TD
     end
 
     subgraph SG_Result["Final Output"]
-        Done["Verified Zero-Defect Essay"]
+        Done["Verified High-Quality Essay"]
     end
 
     Req --> Orch
@@ -64,8 +62,8 @@ flowchart TD
     UserPrompt -.-> Req
     VIntake -->|"PASS"| Editor
     Editor --> VEssay
-    VEssay -->|"FAIL: Delta Feedback"| Editor
-    VEssay -->|"PASS"| Checker
+    VEssay -->|"HARD FAIL: Exact Delta"| Editor
+    VEssay -->|"PASS or PASS+WARNING"| Checker
     Checker -->|"REJECT: Critique Feedback"| Editor
     Checker -->|"APPROVED"| Done
 
@@ -91,10 +89,10 @@ flowchart TD
     4. `char_limit`: Character / byte constraint
     5. `user_experience`: Raw engineering facts and actions taken
   - Returns `Exit Code 1` on missing inputs, prompting the user for complete data and preventing AI fabrication from thin air.
-* **Gate 2: Exact Quantitative Verifier (`tools/verify_essay.js`)**:
-  - **Multi-Byte Precision**: Calculates exact character counts.
-  - **Sentence Variance & Monotony Audit**: Rejects uniform AI cadence. 
-  - **Anti-Cliché Filter**: Scans for and flags artificial AI idioms.
+* **Gate 2: Verification & Quality Signals (`tools/verify_essay.js`)**:
+  - **Hard Constraints (`FAIL`)**: Exact character counts, EUC-KR (2-byte) and UTF-8 (3-byte) boundaries, and format compliance. Hard violations immediately trigger iterative delta revision.
+  - **Heuristic Quality Signals (`PASS + WARNING`)**: Scans for potential clichés (`귀사`, `시너지`, `기여하고 싶습니다`) and checks sentence length variance. Warnings are provided to the editor and auditor without artificially failing an essay that meets all hard constraints.
+  - **Pure Text Code Block Extraction**: Automatically extracts text from inside ````text ```` markdown code blocks, preventing false positive length errors from metadata tables or section headers.
 
 ### 2. 👥 3 Specialized Subagent Personas (`agents/` & `AGENTS.md`)
 * **`job_analyst` (`agents/job_analyst.md`)**: Parses official job posting PDFs/text, extracts core technical requirements, and conducts market/company research.
@@ -178,16 +176,20 @@ node tools/validate_intake.js --file ./samples/sample_input.md
 node tools/verify_essay.js --text "작성된 자기소개서 본문..." --min 400 --max 500
 
 # Verify EUC-KR byte limits (e.g., max 1,000 bytes)
-node tools/verify_essay.js --file ./draft_output.md --max 1000 --type euckr
+node tools/verify_essay.js --file ./samples/sample_output.md --max 1000 --type euckr
 
 # Output structured JSON for IDE integration
 node tools/verify_essay.js --file ./samples/sample_output.md --json
 ```
 
-### 3. Run the Automated Regression Test Suite
-Run continuous integration tests against diverse evaluation cases:
+### 3. Run the Automated Regression Test Suites
+Run continuous verification tests covering hard constraints, heuristic quality signals, and real essay samples:
 ```bash
-npm test
+# Run 6 core regression test cases (Hard Constraints vs Heuristics orthogonality)
+node tests/test_hard_vs_heuristic.js
+
+# Run full sample regression suite
+node tests/run_tests.js
 ```
 
 ---
