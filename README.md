@@ -1,4 +1,4 @@
-# Resume-Helper-AgenticAI
+# Job-Application-Essay-Helper
 
 [![Google Antigravity](https://img.shields.io/badge/Powered%20by-Google%20Antigravity-4285F4.svg)]()
 [![Node.js Version](https://img.shields.io/badge/node.js-18%2B-green.svg)](https://nodejs.org/)
@@ -19,7 +19,7 @@ Writing technical and corporate application essays requires meeting **strict, un
 
 Large Language Models (LLMs) struggle with deterministic math, character counting, and consistent self-auditing. 
 
-**Resume-Helper-AgenticAI** solves this by leveraging **Google Antigravity's native multi-agent orchestration**. Instead of relying on brittle external API scripts, Antigravity's **Main Agent** acts as the orchestrator, collaborating with specialized subagents (`job_analyst`, `resume_editor`, `fact_checker`) and enforcing **deterministic code gates** (`validate_intake.js`, `verify_essay.js`) in an autonomous closed loop (Evaluator-Optimizer Pattern).
+**Resume-Helper-AgenticAI** solves this by leveraging **Google Antigravity's native multi-agent orchestration**.  Antigravity's **Main Agent** acts as the orchestrator, collaborating with specialized subagents (`job_analyst`, `resume_editor`, `fact_checker`) and enforcing **deterministic code gates** (`validate_intake.js`, `verify_essay.js`) in an autonomous closed loop (Evaluator-Optimizer Pattern).
 
 ---
 
@@ -99,7 +99,7 @@ flowchart TD
 ### 2. 👥 3 Specialized Subagent Personas (`agents/` & `AGENTS.md`)
 * **`job_analyst` (`agents/job_analyst.md`)**: Parses official job posting PDFs/text, extracts core technical requirements, and conducts market/company research.
 * **`resume_editor` (`agents/resume_editor.md`)**: 
-  - **Rule 16: Anti-Overpolishing & Authentic Voice Preservation**: Strictly forbids generic corporate reporting speak (e.g. `"병목을 조율하여"`, `"면밀히 검토했습니다"`). Preserves 80%+ of the candidate's natural conversational phrasing and raw engineering dilemmas, practicing **Minimal Invasive Editing**.
+  - **Rule 16: Anti-Overpolishing & Authentic Voice Preservation**: Strictly forbids generic corporate reporting speak. Preserves 80%+ of the candidate's natural conversational phrasing and raw engineering dilemmas, practicing **Minimal Invasive Editing**.
   - **STAR Plot & Action 60%+**: Focuses the majority of length on concrete actions, technical tradeoffs, and bottom-line-first conclusions.
 * **`fact_checker` (`agents/fact_checker.md`)**: Operates as a blind auditor evaluating drafts against a strict 6-point integrity rubric (JD alignment, hallucination detection, anti-monotony, name-swapping tests, and authentic voice consistency).
 
@@ -151,7 +151,6 @@ git clone https://github.com/BR8KTIME/Resume-Helper-AgenticAI.git
 Simply prompt Antigravity's Main Agent in natural language. For example:
 
 > *"samples/sample_input.md 파일을 참고해서 문항 1번 자소서 작성해줘."*  
-> *"HD현대마린솔루션 DT설계 직무 1번 문항 초안 작성하고 검증 루프 돌려줘."*
 
 ### Step 3. Autonomous Closed-Loop Execution
 Antigravity automatically executes the workflow:
@@ -196,7 +195,6 @@ npm test
 ## 👤 Author
 
 * **Hasung Cho**
-  * GitHub: [@BR8KTIME](https://github.com/BR8KTIME)
   * Email: lifeofcho23@gmail.com
 
 ---
