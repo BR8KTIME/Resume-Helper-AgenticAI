@@ -91,7 +91,7 @@ flowchart TD
   - Returns `Exit Code 1` on missing inputs, prompting the user for complete data and preventing AI fabrication from thin air.
 * **Gate 2: Verification & Quality Signals (`tools/verify_essay.js`)**:
   - **Hard Constraints (`FAIL`)**: Exact character counts, EUC-KR (2-byte) and UTF-8 (3-byte) boundaries, and format compliance. Hard violations immediately trigger iterative delta revision.
-  - **Heuristic Quality Signals (`PASS + WARNING`)**: Scans for potential clichés (`귀사`, `시너지`, `기여하고 싶습니다`) and checks sentence length variance. Warnings are provided to the editor and auditor without artificially failing an essay that meets all hard constraints.
+  - **Heuristic Quality Signals (`PASS + WARNING`)**: Scans for potential clichés and checks sentence length variance. Warnings are provided to the editor and auditor without artificially failing an essay that meets all hard constraints.
   - **Pure Text Code Block Extraction**: Automatically extracts text from inside ````text ```` markdown code blocks, preventing false positive length errors from metadata tables or section headers.
 
 ### 2. 👥 3 Specialized Subagent Personas (`agents/` & `AGENTS.md`)
