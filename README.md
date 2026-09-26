@@ -98,8 +98,14 @@ flowchart TD
 
 ### 2. 👥 3 Specialized Subagent Personas (`agents/` & `AGENTS.md`)
 * **`job_analyst` (`agents/job_analyst.md`)**: Parses official job posting PDFs/text, extracts core technical requirements, and conducts market/company research.
-* **`resume_editor` (`agents/resume_editor.md`)**: Crafts bottom-line-first (두괄식) STAR essays, focusing 60%+ of the content on engineering actions and authentic terminology.
-* **`fact_checker` (`agents/fact_checker.md`)**: Operates as a blind auditor evaluating drafts against a strict 6-point integrity rubric (JD alignment, hallucination detection, anti-monotony, and evidence validation).
+* **`resume_editor` (`agents/resume_editor.md`)**: 
+  - **Rule 16: Anti-Overpolishing & Authentic Voice Preservation**: Strictly forbids generic corporate reporting speak (e.g. `"병목을 조율하여"`, `"면밀히 검토했습니다"`). Preserves 80%+ of the candidate's natural conversational phrasing and raw engineering dilemmas, practicing **Minimal Invasive Editing**.
+  - **STAR Plot & Action 60%+**: Focuses the majority of length on concrete actions, technical tradeoffs, and bottom-line-first conclusions.
+* **`fact_checker` (`agents/fact_checker.md`)**: Operates as a blind auditor evaluating drafts against a strict 6-point integrity rubric (JD alignment, hallucination detection, anti-monotony, name-swapping tests, and authentic voice consistency).
+
+### 3. 🎯 Key Engineering Innovations in v2.0
+* **Deterministic Markdown Code Block Extraction**: `tools/verify_essay.js` automatically strips markdown headers and metadata tables, targeting exclusively pure essay text inside ````text ```` blocks with zero byte offset errors.
+* **Single-Session Delta Revision Protocol**: Instead of resetting subagent contexts on every retry, feedback is injected incrementally via targeted messaging (`send_message`), preserving context and converging to optimal character counts in 1~2 iterations.
 
 ---
 

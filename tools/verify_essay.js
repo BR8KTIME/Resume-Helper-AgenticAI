@@ -169,8 +169,14 @@ function run() {
     process.exit(1);
   }
 
-  // 앞뒤 마크다운 코드블록이나 불필요한 공백 제거
-  targetText = targetText.replace(/^```[a-z]*\n/i, '').replace(/\n```$/i, '').trim();
+  // 마크다운 코드블록(```text ... ``` 또는 ``` ... ```)이 포함되어 있으면 내부 텍스트만 추출
+  const codeBlockMatch = targetText.match(/```(?:text)?\r?\n([\s\S]*?)\r?\n```/);
+  if (codeBlockMatch) {
+    targetText = codeBlockMatch[1].trim();
+  } else {
+    // 앞뒤 마크다운 코드블록이나 불필요한 공백 제거
+    targetText = targetText.replace(/^```[a-z]*\r?\n/i, '').replace(/\r?\n```$/i, '').trim();
+  }
 
   // 글자 수 및 바이트 계산
   const charWithSpaces = targetText.length;

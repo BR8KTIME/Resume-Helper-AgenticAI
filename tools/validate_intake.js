@@ -1,37 +1,25 @@
-/**
- * validate_intake.js
- * 
- * Step 1: Input Contract & Requirement Gatekeeper
- * 
- * Ensures that the Autonomous Closed-Loop writing pipeline NEVER starts
- * without all 5 mandatory engineering inputs. Eliminates hallucination at the source.
- * 
- * 5 Mandatory Inputs:
- * 1. company        : Target company name
- * 2. job_description: Official JD text, requirements, or verified JD file path
- * 3. question       : Essay prompt / question title
- * 4. char_limit     : Strict character limits (max limit required, min optional defaults to 85~90%)
- * 5. user_experience: Authentic factual experiences / technical actions from candidate
- * 
- * Usage:
- *   node tools/validate_intake.js --file <input.md>
- *   node tools/validate_intake.js --company "..." --jd "..." --question "..." --max 500 --exp "..."
- */
-
 const fs = require('fs');
 const path = require('path');
 
+/**
+ * validate_intake.js
+ * 
+ * [Gate 1: Input Contract Gatekeeper]
+ * 자기소개서 작성 시작 전 5대 필수 입력(Input Contract) 충족 여부를 코드로 사전 검증.
+ * 단 하나라도 누락 시 Exit Code 1로 차단하여 AI의 임의 추측 및 날조를 원천 차단.
+ */
+
 const MANDATORY_FIELDS = [
-  { key: 'company', label: '지원 기업명 (Company)', description: '어느 기업에 지원하는지 명시' },
-  { key: 'job_description', label: '공식 직무기술서/JD (Job Description)', description: '공식 공고문의 직무 역할 및 요구역량' },
-  { key: 'question', label: '문항 번호 및 질문 (Question Prompt)', description: '기업에서 제시한 공식 자기소개서 질문' },
-  { key: 'char_limit', label: '글자 수 한도 (Character Limits)', description: '최대 글자 수 (예: 최대 500자)' },
-  { key: 'user_experience', label: '지원자 실제 경험/소재 (Candidate Experience)', description: '지원자가 실제로 수행한 공학적 행동 및 팩트' }
+  { key: 'company', name: '지원 기업명 (Target Company)', desc: '지원 대상 기업의 공식 명칭' },
+  { key: 'job_description', name: '공식 JD 및 요구역량 (Job Description)', desc: '공식 채용 공고에 명시된 직무 역할 및 필수/우대 역량' },
+  { key: 'question', name: '문항 번호 및 질문 (Question Prompt)', desc: '작성할 자기소개서 문항 내용' },
+  { key: 'char_limit', name: '최대 글자 수 한도 (Char/Byte Limit)', desc: '공백 포함/제외 최대 글자 수 또는 바이트 한도' },
+  { key: 'user_experience', name: '지원자 실제 경험/소재 (Candidate Experience)', desc: '지원자가 실제로 수행한 공학적 행동 및 팩트' }
 ];
 
 function parseInputFile(filePath) {
   if (!fs.existsSync(filePath)) {
-    throw new Error(`입력 파일을 찾을 수 없습니다: ${filePath}`);
+    throw new Error(`파일을 찾을 수 없습니다: ${filePath}`);
   }
 
   const content = fs.readFileSync(filePath, 'utf-8');
@@ -104,31 +92,36 @@ function validateIntake(data) {
   };
 }
 
-function run() {
+function main() {
   const args = process.argv.slice(2);
-  let parsedData = {};
+  let inputData = {};
 
-  if (args.includes('--file') || args.includes('-f')) {
-    const idx = args.indexOf('--file') !== -1 ? args.indexOf('--file') : args.indexOf('-f');
-    const filePath = path.resolve(args[idx + 1]);
-    parsedData = parseInputFile(filePath).data;
+  const fileArgIdx = args.indexOf('--file');
+  if (fileArgIdx !== -1 && args[fileArgIdx + 1]) {
+    try {
+      const parsed = parseInputFile(args[fileArgIdx + 1]);
+      inputData = parsed.data;
+    } catch (e) {
+      console.error(`[Error] ${e.message}`);
+      process.exit(1);
+    }
   } else {
-    parsedData = parseCliArgs(args);
+    inputData = parseCliArgs(args);
   }
 
-  const validation = validateIntake(parsedData);
+  const result = validateIntake(inputData);
 
   console.log('====================================================');
   console.log('🛡️ [Input Contract Gatekeeper: validate_intake]');
   console.log('====================================================');
 
-  if (validation.isValid) {
+  if (result.isValid) {
     console.log('🟢 [CONTRACT VALIDATED] 모든 필수 입력이 완벽히 충족되었습니다.');
-    console.log(`• 지원 기업: ${validation.data.company}`);
-    console.log(`• 공식 직무: ${validation.data.job_description.slice(0, 50)}...`);
-    console.log(`• 대상 문항: ${validation.data.question}`);
-    console.log(`• 글자 규격: 최대 ${validation.data.char_limit.max}자 (목표: ${validation.data.char_limit.min}~${validation.data.char_limit.max}자)`);
-    console.log(`• 지원자 소재: ${validation.data.user_experience.slice(0, 50)}...`);
+    console.log(`• 지원 기업: ${result.data.company}`);
+    console.log(`• 공식 직무: ${result.data.job_description.substring(0, 40)}...`);
+    console.log(`• 대상 문항: ${result.data.question}`);
+    console.log(`• 글자 규격: 최대 ${result.data.char_limit.max}자 (목표: ${result.data.char_limit.min}~${result.data.char_limit.max}자)`);
+    console.log(`• 지원자 소재: ${result.data.user_experience.substring(0, 50)}...`);
     console.log('----------------------------------------------------');
     console.log('🚀 Step 2: resume_editor 초안 생성으로 진입을 승인합니다.');
     console.log('====================================================');
@@ -136,9 +129,9 @@ function run() {
   } else {
     console.log('🔴 [CONTRACT REJECTED] 필수 입력 정보가 누락되어 초안 생성을 차단합니다.');
     console.log('★ AI의 임의 추측 및 할루시네이션을 방지하기 위해 아래 항목이 반드시 필요합니다:\n');
-    validation.missing.forEach((m, idx) => {
-      console.log(`   ${idx + 1}. ❌ ${m.label}`);
-      console.log(`      └─ 설명: ${m.description}`);
+    result.missing.forEach((m, idx) => {
+      console.log(`   ${idx + 1}. ❌ ${m.name}`);
+      console.log(`      └─ 설명: ${m.desc}`);
     });
     console.log('\n----------------------------------------------------');
     console.log('⚠️ [Action Required] 위 누락 항목을 사용자로부터 먼저 입력받은 뒤 다시 실행하십시오.');
@@ -148,11 +141,11 @@ function run() {
 }
 
 if (require.main === module) {
-  run();
+  main();
 }
 
 module.exports = {
-  MANDATORY_FIELDS,
   validateIntake,
-  parseInputFile
+  parseInputFile,
+  MANDATORY_FIELDS
 };
