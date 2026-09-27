@@ -1,10 +1,14 @@
 # 🚀 Resume-Helper-AgenticAI
 
-Resume-Helper-AgenticAI is a closed-loop, multi-agent system for writing high-stakes employment essays and technical applications.
+**Resume-Helper-AgenticAI** is a multi-agent workflow for generating and validating job application essays.
 
-The system separates **objectively verifiable constraints** from **semantic and stylistic judgments**. Deterministic Node.js tools enforce measurable requirements such as character and byte limits, while specialized LLM agents handle job analysis, essay generation, and qualitative/factual auditing.
+The system is designed around one principle:
 
-Rather than relying on a single LLM to generate and evaluate its own output, the system uses independent validation stages to reduce hallucination risk, prevent unsupported claims, identify corporate clichés, and preserve the candidate's authentic voice.
+> **Use the Main Agent for orchestration and semantic decisions, and use deterministic code wherever correctness can be measured.**
+
+Instead of asking a single LLM to generate, evaluate, and revise an essay by itself, the workflow separates responsibilities across a **Main Agent (Orchestrator)**, specialist subagents, and deterministic validation tools.
+
+The result is an **Evaluator–Optimizer loop** in which generated drafts are checked against objective constraints and then reviewed for factual and qualitative issues before being returned to the user.
 
 ---
 
@@ -12,78 +16,90 @@ Rather than relying on a single LLM to generate and evaluate its own output, the
 
 ```mermaid
 flowchart TD
-    Req["User Request: Essay Draft"] --> Orch["Main Agent / Orchestrator"]
-    Orch --> Gate1["Gate 1: validate_intake.js<br/>5 Mandatory Inputs"]
+    Req["User Request"] --> Orch["Main Agent / Orchestrator"]
 
-    Gate1 -- "Missing Input" --> Prompt["Request Missing Information"]
-    Prompt -.-> Req
+    Orch --> Gate1["Gate 1<br/>validate_intake.js"]
 
-    Gate1 -- "PASS" --> Editor["Subagent: resume_editor<br/>Draft Generation"]
-    Editor --> Gate2["Gate 2: verify_essay.js<br/>Deterministic Validation"]
+    Gate1 -- "Missing Input" --> Req
 
-    Gate2 -- "HARD FAIL" --> Editor
-    Gate2 -- "PASS / WARNING" --> Checker["Subagent: fact_checker<br/>Qualitative & Factual Audit"]
+    Gate1 -- "PASS" --> Editor["Subagent<br/>resume_editor"]
 
-    Checker -- "REJECT" --> Editor
+    Editor --> Gate2["Gate 2<br/>verify_essay.js"]
+
+    Gate2 -- "HARD FAIL<br/>with Delta" --> Editor
+
+    Gate2 -- "PASS + optional WARNING" --> Checker["Subagent<br/>fact_checker"]
+
+    Checker -- "REJECT<br/>with Feedback" --> Editor
+
     Checker -- "APPROVED" --> Done["Verified Final Essay"]
 ```
 
-### Closed-Loop Workflow
+### Main Agent as the Orchestrator
 
-The system follows a gated revision loop:
+The **Main Agent is the control layer of the system**.
 
-1. **Input Contract Validation**
-   Ensures that the company, job description, question, character limit, and candidate experience are sufficiently specified before drafting begins.
+It does not directly own essay generation. Instead, it coordinates the workflow defined in [`AGENTS.md`](AGENTS.md):
 
-2. **Essay Generation**
-   `resume_editor` generates a draft using the candidate's actual experience, job requirements, and structured writing rules.
+* validates whether the required input contract is satisfied
+* delegates drafting to `resume_editor`
+* invokes deterministic validation through `verify_essay.js`
+* routes hard-constraint failures back to the editor with specific feedback
+* delegates qualitative and factual review to `fact_checker`
+* routes rejected drafts back for revision
+* terminates the workflow when the required validation stages are satisfied
 
-3. **Deterministic Validation**
-   `verify_essay.js` checks objectively measurable constraints such as character counts, byte limits, and predefined heuristic signals.
-
-4. **Qualitative & Factual Audit**
-   `fact_checker` independently reviews the draft for unsupported claims, fabricated experiences or metrics, role exaggeration, logical inconsistencies, and stylistic issues.
-
-5. **Revision Loop**
-   Failed constraints and audit feedback are returned to the editor for revision until the draft satisfies the required contracts.
+The specialist agents are intentionally separated from the Main Agent so that **workflow control, content generation, and validation remain distinct responsibilities**.
 
 ---
 
-## 🎯 Core Principles
+## 🔄 Closed-Loop Workflow
 
-### 1. Orthogonality: Hard Constraints vs. Heuristic Signals
+The workflow consists of gated generation and revision stages.
 
-The system deliberately separates **machine-enforceable constraints** from **advisory quality signals**.
+### 1. Input Contract Validation
 
-#### Hard Constraints — `FAIL` → Mandatory Revision
+Before drafting begins, `validate_intake.js` checks whether the required information is available:
 
-These are requirements that can be evaluated deterministically:
+1. `company` — target company
+2. `job_description` — job description and required capabilities
+3. `question` — application question
+4. `char_limit` — character limit
+5. `user_experience` — candidate's actual experience and facts
 
-* Exact character limits, with or without spaces.
-* UTF-8 byte limits using `Buffer.byteLength`.
-* Minimum and maximum boundaries.
-* Required input completeness.
-* Structural validation of generated output.
+If required information is missing, the Main Agent requests the missing information instead of allowing the drafting stage to proceed.
 
-Semantic factual integrity is handled separately by the independent `fact_checker` agent rather than being treated as a purely deterministic property.
+### 2. Draft Generation
 
-#### Heuristic Quality Signals — `PASS + WARNING`
+Once the input contract is satisfied, the Main Agent delegates the writing task to `resume_editor`.
 
-These signals indicate potential quality issues without automatically invalidating a draft:
+The editor is responsible for:
 
-* Corporate clichés and generic buzzwords.
-* Overused or unnatural expressions.
-* Sentence-length uniformity and writing monotony.
-* Phrasing and flow issues.
-* Other stylistic patterns that may make the essay sound overly generated or generic.
+* interpreting the application question
+* structuring the candidate's experience
+* emphasizing engineering actions and decisions
+* preserving the candidate's actual experience
+* controlling essay length
+* avoiding unsupported achievements and fabricated details
+* maintaining the candidate's natural voice
 
-Warnings are fed back to the editor as revision guidance, but they do not automatically fail the draft or create an unconditional revision loop.
+The editor's behavior is defined in [`agents/resume_editor.md`](agents/resume_editor.md).
 
----
+### 3. Deterministic Validation
 
-### 2. Deterministic Verification
+The generated draft is passed to `verify_essay.js`.
 
-Where a requirement can be measured objectively, the system avoids asking an LLM to make the final decision.
+The verifier separates two types of checks:
+
+**Hard constraints**
+
+* character limits
+* minimum / maximum boundaries
+* UTF-8 byte limits
+* EUC-KR/CP949-oriented byte estimation
+* structural validation
+
+A hard-constraint violation produces `FAIL` and a concrete delta.
 
 For example:
 
@@ -92,96 +108,225 @@ Maximum: 500 characters
 
 499 → PASS
 500 → PASS
-501 → FAIL (Delta: +1)
+501 → FAIL (+1)
 ```
 
-This makes boundary conditions explicit and reproducible.
+**Heuristic quality signals**
 
-UTF-8 byte length is measured using Node.js's native `Buffer.byteLength`, while the current EUC-KR/CP949 handling uses a deterministic byte-estimation rule implemented in the verifier.
+* corporate clichés
+* generic expressions
+* sentence-length uniformity
+* writing monotony
+* other predefined stylistic patterns
 
-> **Note:** EUC-KR validation is intentionally kept separate from UTF-8 byte measurement because the two encodings have different byte-length characteristics.
+Heuristic findings are reported as warnings rather than automatically invalidating the draft.
 
----
+This distinction prevents a subjective quality signal such as a cliché from being treated as equivalent to an objective constraint violation.
 
-### 3. Boundary-Condition Regression Tests
+### 4. Revision Loop
 
-The repository includes a regression suite covering both hard constraints and the separation between hard failures and heuristic warnings.
+When `verify_essay.js` reports a hard failure, the Main Agent routes the draft and validation feedback back to `resume_editor`.
 
-The suite contains 12 cases:
+The editor then revises the draft against the specific failure rather than restarting the writing process from scratch.
 
-| Test | Scenario                     | Expected Result  |
-| ---- | ---------------------------- | ---------------- |
-| TC01 | Maximum boundary             | `PASS`           |
-| TC02 | Maximum exceeded by 1        | `FAIL`           |
-| TC03 | Minimum boundary             | `PASS`           |
-| TC04 | Minimum violated by 1        | `FAIL`           |
-| TC05 | Boundary + cliché            | `PASS + WARNING` |
-| TC06 | Hard violation + cliché      | `FAIL + WARNING` |
-| BC01 | Exact maximum boundary       | `PASS`           |
-| BC02 | Off-by-one maximum violation | `FAIL`           |
-| BC03 | Exact minimum boundary       | `PASS`           |
-| BC04 | Off-by-one minimum violation | `FAIL`           |
-| BC05 | Hard/heuristic orthogonality | `PASS + WARNING` |
-| BC06 | Byte-boundary validation     | `PASS / FAIL`    |
-
-The purpose is not simply to test normal inputs, but to verify that the validator behaves correctly at **boundary conditions** and that heuristic warnings do not accidentally override hard constraints.
-
----
-
-### 4. Independent Qualitative Auditing
-
-The system uses a separate `fact_checker` agent rather than asking the writing agent to approve its own output.
-
-The audit focuses on:
-
-* Unsupported or fabricated experiences.
-* Fabricated metrics or technical results.
-* Incorrect company or job-related claims.
-* Exaggeration of the candidate's actual role.
-* Logical inconsistencies.
-* Generic or overly artificial phrasing.
-
-This separation reduces the risk of a generator reinforcing its own unsupported claims.
-
----
-
-### 5. Candidate Voice Preservation
-
-The goal is not to make every essay sound maximally polished or uniformly "professional."
-
-The editor is instructed to preserve:
-
-* The candidate's actual experience.
-* Their reasoning process.
-* Concrete technical details.
-* Natural sentence rhythm.
-* Individual phrasing where it does not harm clarity.
-
-The system therefore favors **minimal, evidence-based editing** over aggressive rewriting.
-
-In particular, the system avoids inventing achievements, technologies, responsibilities, or metrics simply to make an application appear stronger.
-
----
-
-### 6. Single-Session Subagent Lifecycle
-
-Subagents are designed to operate within a controlled lifecycle rather than repeatedly spawning independent processes.
-
-The intended state progression is:
+The intended loop is:
 
 ```text
-INPUT_REQUIRED
-      ↓
-DRAFTING
-      ↓
-QUANTITATIVE_REVIEW
-      ↓
-QUALITATIVE_REVIEW
-      ↓
-COMPLETED
+Draft
+  ↓
+Deterministic Validation
+  ↓
+FAIL
+  ↓
+Delta Feedback
+  ↓
+resume_editor
+  ↓
+Draft
 ```
 
-This provides a predictable revision workflow and keeps the responsibilities of each stage explicit.
+### 5. Independent Qualitative / Factual Audit
+
+After deterministic validation passes, the Main Agent delegates the draft to `fact_checker`.
+
+The fact checker reviews issues that are difficult to establish through simple deterministic rules:
+
+* unsupported experiences
+* fabricated metrics
+* exaggerated responsibilities
+* incorrect company or job claims
+* logical inconsistencies
+* overly generic or artificial wording
+
+If the draft is rejected, the feedback is routed back to `resume_editor` for another revision.
+
+Only after the required validation stages are satisfied is the draft returned as the final output.
+
+---
+
+## 🧩 Agent Roles
+
+### Main Agent — Orchestrator
+
+The Main Agent owns:
+
+* workflow control
+* agent delegation
+* validation routing
+* revision feedback routing
+* termination conditions
+
+It acts as the **control plane** rather than the primary writer.
+
+The orchestration policy is defined in [`AGENTS.md`](AGENTS.md).
+
+### `resume_editor`
+
+Responsible for:
+
+* application-question analysis
+* STAR structuring
+* engineering-action-focused writing
+* character-count optimization
+* candidate voice preservation
+* revision based on validation feedback
+
+The editor is explicitly instructed not to invent experiences, metrics, technologies, or responsibilities.
+
+See [`agents/resume_editor.md`](agents/resume_editor.md).
+
+### `fact_checker`
+
+Provides an independent review of the generated draft.
+
+Its purpose is to prevent the writing agent from becoming the sole evaluator of its own output.
+
+See [`agents/fact_checker.md`](agents/fact_checker.md).
+
+### `job_analyst`
+
+Analyzes job descriptions and extracts:
+
+* required capabilities
+* technical requirements
+* role responsibilities
+* company / position context
+
+Its output can be used by the Main Agent and `resume_editor` when job-specific analysis is required.
+
+See [`agents/job_analyst.md`](agents/job_analyst.md).
+
+---
+
+## 🛡️ Deterministic Validation Tools
+
+### `tools/validate_intake.js`
+
+Validates the five required input fields before essay generation.
+
+```text
+company
+job_description
+question
+char_limit
+user_experience
+```
+
+The tool returns a non-zero exit code when required input is missing.
+
+### `tools/verify_essay.js`
+
+Performs objective validation and heuristic analysis.
+
+It reports metrics including:
+
+```text
+Character count with spaces
+Character count without spaces
+UTF-8 byte count
+EUC-KR-oriented byte estimate
+Detected clichés
+Sentence variance
+Constraint violations
+```
+
+The verifier returns structured JSON when invoked with `--json`, making its output suitable for integration with an agent workflow or external tooling.
+
+---
+
+## 🎯 Design Principle: Hard Constraints vs. Heuristics
+
+A central design decision is to avoid treating every writing requirement as an LLM judgment.
+
+### Hard Constraints
+
+If a requirement can be measured objectively, code should make the final decision.
+
+Examples:
+
+```text
+Maximum character count
+Minimum character count
+Byte limit
+Required input fields
+Boundary conditions
+```
+
+### Heuristic Signals
+
+Some properties are inherently subjective and are therefore reported separately.
+
+Examples:
+
+```text
+Corporate clichés
+Generic wording
+Sentence-length uniformity
+Writing monotony
+```
+
+The distinction is intentional:
+
+```text
+Hard Constraint Violation
+        ↓
+       FAIL
+        ↓
+    Revision
+
+Heuristic Warning
+        ↓
+PASS + WARNING
+        ↓
+Optional Improvement
+```
+
+This prevents subjective style heuristics from accidentally becoming hard validation rules.
+
+---
+
+## 🧪 Boundary-Condition Regression Tests
+
+The repository contains a dedicated regression suite for validating the distinction between hard constraints and heuristic signals.
+
+The suite contains **12 test cases** covering:
+
+| Test | Scenario                       | Expected         |
+| ---- | ------------------------------ | ---------------- |
+| TC01 | Character limit violation      | `FAIL`           |
+| TC02 | Byte limit violation           | `FAIL`           |
+| TC03 | Cliché without hard violation  | `PASS + WARNING` |
+| TC04 | Sentence variance warning      | `PASS + WARNING` |
+| TC05 | Hard violation + cliché        | `FAIL + WARNING` |
+| TC06 | Hard constraints satisfied     | `PASS`           |
+| BC01 | Exact maximum boundary         | `PASS`           |
+| BC02 | Maximum +1                     | `FAIL`           |
+| BC03 | Exact minimum boundary         | `PASS`           |
+| BC04 | Minimum -1                     | `FAIL`           |
+| BC05 | Exact boundary + cliché        | `PASS + WARNING` |
+| BC06 | EUC-KR / UTF-8 byte boundaries | `PASS / FAIL`    |
+
+The purpose is not only to test ordinary inputs, but also to verify **off-by-one behavior and the orthogonality between hard failures and heuristic warnings**.
 
 ---
 
@@ -193,9 +338,9 @@ Resume-Helper-AgenticAI/
 ├── .gitignore
 ├── AGENTS.md
 ├── LICENSE
-├── package.json
 ├── README.md
 ├── draft_input.template.md
+├── package.json
 │
 ├── agents/
 │   ├── fact_checker.md
@@ -218,44 +363,94 @@ Resume-Helper-AgenticAI/
     └── verify_essay.js
 ```
 
-### Key Components
+### Component Responsibilities
 
-| Component                   | Responsibility                                                        |
-| --------------------------- | --------------------------------------------------------------------- |
-| `validate_intake.js`        | Validates the mandatory input contract                                |
-| `verify_essay.js`           | Performs deterministic character/byte validation and heuristic checks |
-| `resume_editor.md`          | Controls essay generation and revision behavior                       |
-| `fact_checker.md`           | Performs independent qualitative and factual auditing                 |
-| `job_analyst.md`            | Deconstructs job descriptions and extracts relevant capabilities      |
-| `test_hard_vs_heuristic.js` | Tests boundary conditions and hard/heuristic separation               |
-| `run_tests.js`              | Runs the benchmark test suite                                         |
-| `AGENTS.md`                 | Defines the overall multi-agent workflow and behavioral contract      |
+| Component                         | Responsibility                                                   |
+| --------------------------------- | ---------------------------------------------------------------- |
+| `AGENTS.md`                       | Defines the Main Agent's orchestration policy and agent workflow |
+| `agents/resume_editor.md`         | Essay generation and revision rules                              |
+| `agents/fact_checker.md`          | Independent qualitative and factual audit                        |
+| `agents/job_analyst.md`           | Job-description analysis                                         |
+| `tools/validate_intake.js`        | Input contract validation                                        |
+| `tools/verify_essay.js`           | Deterministic essay verification and heuristic signals           |
+| `tools/test_hard_vs_heuristic.js` | Boundary and orthogonality regression tests                      |
+| `tests/run_tests.js`              | Benchmark test runner                                            |
+| `tests/test_cases.json`           | Benchmark inputs and expected results                            |
 
 ---
 
-## 🔍 Design Philosophy
+## 🛠️ Quickstart
+
+### 1. Validate Required Inputs
+
+```bash
+node tools/validate_intake.js
+```
+
+### 2. Run Boundary Regression Tests
+
+```bash
+node tools/test_hard_vs_heuristic.js
+```
+
+### 3. Run the Full Test Suite
+
+```bash
+npm test
+```
+
+### 4. Verify an Essay
+
+```bash
+node tools/verify_essay.js \
+  --text "Your essay content..." \
+  --max 500
+```
+
+For structured JSON output:
+
+```bash
+node tools/verify_essay.js \
+  --text "Your essay content..." \
+  --max 500 \
+  --json
+```
+
+To verify a file:
+
+```bash
+node tools/verify_essay.js \
+  --file samples/sample_output.md \
+  --max 800
+```
+
+---
+
+## 🧠 Design Philosophy
 
 The project follows a simple engineering principle:
 
-> **Use deterministic code where correctness can be measured, and use LLM agents where semantic judgment is required.**
+> **Use LLM agents where semantic reasoning is required, and deterministic code where correctness can be measured.**
 
-LLMs are useful for:
+LLM agents are useful for:
 
-* Understanding job descriptions.
-* Structuring candidate experiences.
-* Generating natural language.
-* Evaluating semantic consistency.
-* Providing qualitative feedback.
+* understanding job descriptions
+* structuring candidate experiences
+* generating natural language
+* reasoning about semantic consistency
+* providing qualitative feedback
 
-Code is preferable for:
+Deterministic code is preferable for:
 
-* Character limits.
-* Byte limits.
-* Boundary conditions.
-* Structural contracts.
-* Regression testing.
+* character limits
+* byte limits
+* boundary conditions
+* input contracts
+* regression testing
 
-This separation makes the system more predictable than relying on a single LLM prompt to perform generation, validation, and self-correction simultaneously.
+The Main Agent connects these components into a single workflow while keeping generation, validation, and auditing as separate responsibilities.
+
+This architecture is intended to make the revision process **observable, testable, and less dependent on a single model's self-evaluation**.
 
 ---
 
@@ -263,7 +458,7 @@ This separation makes the system more predictable than relying on a single LLM p
 
 **Hasung Cho**
 
-* Email: [lifeofcho23@gmail.com](mailto:lifeofcho23@gmail.com)
+* GitHub: [BR8KTIME](https://github.com/BR8KTIME)
 
 ---
 
